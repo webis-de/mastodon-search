@@ -1,0 +1,22 @@
+[project]
+name = 'fediverse_analysis'
+description = 'Analysis tools for the fediverse'
+authors = [{name = 'Maximilian Ernst'}]
+classifiers = [
+	'Environment :: Console',
+	'Intended Audience :: Science/Research',
+	'Operating System :: OS Independent',
+	'Programming Language :: Python :: 3 :: Only',
+	'Programming Language :: Python :: 3.10',
+	'Programming Language :: Python :: 3.11',
+	'Programming Language :: Python :: 3.12',
+	'Topic :: Scientific/Engineering',
+	'Topic :: Scientific/Engineering :: Information Analysis'
+]
+dependencies = [
+	'click~=8.1',
+	'Mastodon.py~=1.8',
+]
+readme = 'README.md'
+requires-python = '>=3.10'
+dynamic = ["version"]
