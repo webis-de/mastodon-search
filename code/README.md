@@ -24,6 +24,10 @@ To stream new statuses from a Mastodon instance to a file, run something like:
 ```shell
 python3.12 -m fediverse_analysis stream-to-file 'pawoo.net' path/to/file
 ```
+For writing incoming status to an Elasticsearch, the command looks something like this:
+```shell
+python3.12 -m fediverse_analysis stream-to-es -H 'http://example.com' -i 'mastodon' -u 'username' -P 'p4ssw0rd' troet.cafe
+```
 
 
 # get-instance-data.py

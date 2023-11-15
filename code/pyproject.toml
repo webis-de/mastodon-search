@@ -15,6 +15,9 @@ classifiers = [
 ]
 dependencies = [
 	'click~=8.1',
+	'elasticsearch~=8.11',
+	'elastic-transport~=8.10',
+	'elasticsearch_dsl~=8.11',
 	'Mastodon.py~=1.8',
 ]
 readme = 'README.md'
