@@ -33,16 +33,21 @@ class Streamer:
         new public, local statuses.
         """
         self.output_file = file
-        try:
-            self.mastodon.stream_public(
-                _UpdateStreamListener(self), local=True)
-        except mstdn.MastodonVersionError:
-            print(f'{self.instance} does not support streaming.')
-            exit(1)
-        except mstdn.MastodonNetworkError as e:
-            print(e)
-            exit(1)
-        exit(0)
+        while True:
+            try:
+                self.mastodon.stream_public(
+                    _UpdateStreamListener(self), local=True)
+            except mstdn.MastodonVersionError:
+                print(f'{self.instance} does not support streaming.')
+                exit(1)
+            except mstdn.MastodonNetworkError as e:
+                # Server closes connection, we reconnect.
+                # Sadly, there are multiple causes that trigger this error.
+                if (str(e) == 'Server ceased communication.'):
+                    pass
+                else:
+                    print(e)
+                    exit(1)
 
 
 class _UpdateStreamListener(mstdn.StreamListener):
