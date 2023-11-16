@@ -1,1 +1,1 @@
-__all__ = ['stream']
+__all__ = ['save', 'stream']

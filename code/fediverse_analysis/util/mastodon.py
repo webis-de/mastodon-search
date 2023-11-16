@@ -20,6 +20,7 @@ class Status(Document):
     instance = Text()
     language = Text()
     spoiler_text = Text()
+    url = Text()
 
     account = Nested(Account)
     media_attachments = Nested(MediaAttachment)
