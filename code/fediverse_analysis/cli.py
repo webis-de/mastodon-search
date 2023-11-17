@@ -41,3 +41,26 @@ def stream_to_es(instance, host, index, password, port, username):
     from fediverse_analysis.crawl import stream
     streamer = stream.Streamer(instance)
     streamer.stream_updates_to_es(host, index, password, port, username)
+
+@main.command(
+    help='Crawl the API of INSTANCE (e. g.: mastodon.cloud) '
+        +'and save new statuses to Elasticsearch (ES).',
+    short_help='Crawl instance updates to Elasticsearch.',
+    epilog='Only `/api/v1/streaming/public/local` is currently implemented.'
+)
+@click.option('-H', '--host', required=True,
+    help='ES host, e. g.: https://example.com')
+@click.option('-i', '--index', required=True, help='ES index name')
+@click.option('-P', '--password', default='',
+    help='ES password to your username')
+@click.option('-p', '--port', default=9200,
+    help='Port on which ES listens. Default: 9200')
+@click.option('-u', '--username', default='',
+    help='Username for ES authentication')
+@click.option('-w', '--wait', default=3600,
+    help='Max. time to wait between requests in seconds. Default: 3600')
+@click.argument('instance')
+def crawl_to_es(instance, host, index, password, port, username, wait):
+    from fediverse_analysis.crawl import crawl
+    crawler = crawl.Crawler(instance)
+    crawler.crawl_to_es(host, index, password, username, wait, port)
