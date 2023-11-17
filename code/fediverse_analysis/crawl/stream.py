@@ -8,7 +8,9 @@ from fediverse_analysis.util.mastodon import Status
 
 
 class Streamer:
-    """Leverage Mastodon.py to retrieve data from a Mastodon instance."""
+    """Leverage Mastodon.py to retrieve data from a Mastodon instance via the
+    streaming API.
+    """
     def __init__(self, instance: str) -> None:
         """Arguments:
         instance -- an instance's base URI, e. g.: 'pawoo.net'.
@@ -56,10 +58,11 @@ class Streamer:
         """
         try:
             self.save.init_es_connection(host, index, password, port, username)
-        except ValueError:
-            print(e)
+        except ValueError as e:
+            print('URL must include scheme and host '
+                + 'e. g. https://localhost')
             exit(1)
-        except AuthenticationException as e:
+        except AuthenticationException:
             print('Authentication failed. Wrong username and/or password.')
             exit(1)
         self._stream_local_updates()
