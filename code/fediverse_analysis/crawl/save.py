@@ -1,5 +1,6 @@
 from elasticsearch_dsl import connections, Index
 from json import dumps
+from uuid import NAMESPACE_URL, uuid5
 
 from fediverse_analysis.util.mastodon import Status
 
@@ -20,6 +21,9 @@ class _Save:
     SPOILER_TEXT = 'spoiler_text'
     TYPE = 'type'
     URL = 'url'
+
+    NAMESPACE_FA = uuid5(NAMESPACE_URL, 'fediverse_analysis')
+    NAMESPACE_MASTODON = uuid5(NAMESPACE_FA, 'Mastodon')
 
     def __init__(self) -> None:
         self.es_connection = None
@@ -53,7 +57,10 @@ class _Save:
         # Elasticsearch
         else:
             # Put status data into the ES DSL frame.
+            status_uuid = uuid5(self.NAMESPACE_MASTODON,
+                instance + '/' + str(status.get(self.ID)))
             dsl_status = Status(
+                meta={'id': status_uuid},
                 content = status.get(self.CONTENT),
                 created_at = status.get(self.CREATED_AT),
                 id = status.get(self.ID),
