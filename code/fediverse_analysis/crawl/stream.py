@@ -4,7 +4,6 @@ from sys import exit
 from typing import TextIO
 
 from fediverse_analysis.crawl.save import _Save
-from fediverse_analysis.util.mastodon import Status
 
 
 class Streamer:

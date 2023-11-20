@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from elasticsearch_dsl import connections, Index
 from json import dumps
 from uuid import NAMESPACE_URL, uuid5
@@ -12,6 +13,7 @@ class _Save:
     CONTENT = 'content'
     CREATED_AT = 'created_at'
     DESCRIPTION = 'description'
+    EDITED_AT = 'edited_at'
     ID = 'id'
     IN_REPLY_TO_ID = 'in_reply_to_id'
     LANGUAGE = 'language'
@@ -28,6 +30,26 @@ class _Save:
     def __init__(self) -> None:
         self.es_connection = None
         self.output_file = None
+
+    def replace_datetime(self, iterable: dict | list) -> dict | list:
+        """Iterate over possibly nested dicts and lists and replace datetime
+        objects with strings in ISO format with millisecond precision,
+        e. g.: 2000-01-01-19T00:00:00.000+00:00 .
+        """
+        if (isinstance(iterable, dict)):
+            it = iter(iterable.items())
+        else:
+            it = iter(enumerate(iterable))
+        for key, value in it:
+            if isinstance(value, datetime):
+                if (not value.tzinfo):
+                    iterable[key] = value.replace(
+                        tzinfo=timezone.utc).isoformat(timespec='milliseconds')
+                else:
+                    iterable[key] = value.isoformat(timespec='milliseconds')
+            elif isinstance(value, dict) or isinstance(value, list):
+                iterable[key] = self.replace_datetime(value)
+        return iterable
 
     def init_es_connection(
         self,
@@ -48,11 +70,7 @@ class _Save:
     def write_status(self, status: dict, instance: str) -> None:
         """Write an ActivityPub status to the previously defined output."""
         if (self.output_file):
-            # Replace datetime objects with strings.
-            status[self.CREATED_AT] = str(status[self.CREATED_AT])
-            for key in (self.CREATED_AT, self.LAST_STATUS_AT):
-                status[self.ACCOUNT][key] = str(
-                    status[self.ACCOUNT][key])
+            status = self.replace_datetime(status)
             self.output_file.write(dumps(status, ensure_ascii=False) + '\n')
         # Elasticsearch
         else:

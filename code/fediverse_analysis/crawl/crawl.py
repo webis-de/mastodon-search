@@ -1,10 +1,10 @@
 import mastodon as mstdn
+from json import loads
 from sys import exit
 from time import sleep
 from typing import TextIO
 
 from fediverse_analysis.crawl.save import _Save
-from fediverse_analysis.util.mastodon import Status
 
 
 class Crawler:
@@ -20,24 +20,26 @@ class Crawler:
         self.save = _Save()
         self.max_wait = 3600
 
-    def _crawl_local_updates(self) -> None:
-        """Start receiving new public, local statuses."""
+    def _crawl_local_updates(self, min_id: int = None) -> None:
+        """Poll local public timeline of a Mastodon instance via an API call
+        to get new statuses.
+        """
         wait_time = 60
-        try:
-            # Bootstrapping statuses without min_id argument.
-            statuses = self.mastodon.timeline(
-                timeline='public', local=True, limit=40)
-        except Exception as e:
-            print(e)
-            exit(1)
         while True:
+            try:
+                statuses = self.mastodon.timeline(
+                    timeline='public', local=True, limit=40, min_id=min_id)
+            except Exception as e:
+                print(e)
+                break
             if (statuses):
                 min_id = statuses[0].get(self.save.ID)
                 for status in statuses:
                     self.save.write_status(status, self.instance)
             # Adjust wait time between requests to actual activity
             if (len(statuses) == 40):
-                wait_time *= 0.9
+                if(wait_time > 3):
+                    wait_time *= 0.9
             # Never go above a set maximum
             elif (wait_time >= self.max_wait):
                 wait_time = self.max_wait
@@ -49,12 +51,6 @@ class Crawler:
             elif (len(statuses) <= 10):
                 wait_time *= 1.1
             sleep(wait_time)
-            try:
-                statuses = self.mastodon.timeline(
-                    timeline='public', local=True, limit=40, min_id=min_id)
-            except Exception as e:
-                print(e)
-                break
 
     def crawl_to_es(
         self,
@@ -65,8 +61,8 @@ class Crawler:
         max_wait_time: int = None,
         port: int = 9200
     ) -> None:
-        """Connect to the streaming API of the Mastodon instance and receive
-        new public statuses. Write the statuses to Elasticsearch.
+        """Use `_crawl_local_updates` to get new Mastodon statuses and write
+        them to an Elasticsearch instance.
         """
         if (max_wait_time):
             self.wait_time = max_wait_time
@@ -79,3 +75,33 @@ class Crawler:
             print('Authentication failed. Wrong username and/or password.')
             exit(1)
         self._crawl_local_updates()
+
+    def crawl_to_file(self, filename: str, max_wait_time: int = None) -> None:
+        """Use `_crawl_local_updates` to get new Mastodon statuses and write
+        them to a file.
+        """
+        if (max_wait_time):
+            self.wait_time = max_wait_time
+        try:
+            with open(filename, 'rb') as f:
+                try:
+                    # While seeking is slower on small files (still not very
+                    # expensive absolutely), it's way faster on large files.
+                    f.seek(-2, 2)
+                    # Seek to first line with content
+                    while (f.read(1) != b'}'):
+                        f.seek(-2, 1)
+                    f.seek(-1024, 1)
+                    # Seek to start of line
+                    while (f.read(1) != b'\n'):
+                        f.seek(-2, 1)
+                # In case of an empty/whitespace only file.
+                except OSError:
+                    f.seek(0)
+                else:
+                    last_id = loads(f.readline().decode())[_Save.ID]
+        except FileNotFoundError:
+            pass
+        with open(filename, 'a') as f:
+            self.save.output_file = f
+            self._crawl_local_updates(last_id)
