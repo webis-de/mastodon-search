@@ -50,7 +50,9 @@ def crawl_to_file(instance, filename, wait):
 
 @main.command(
     help='Connect to the streaming API of INSTANCE (e. g.: mastodon.cloud) '
-        +'and save incoming new statuses to Elasticsearch (ES).',
+        +'and save incoming new statuses to Elasticsearch (ES). Use crawling '
+        +'of the API via GET requests as a fallback since streaming is '
+        +'usually not publicly allowed.',
     short_help='Stream instance updates to Elasticsearch.',
     epilog='Only `/api/v1/streaming/public/local` is currently implemented.'
 )
@@ -71,7 +73,9 @@ def stream_to_es(instance, host, index, password, port, username):
 
 @main.command(
     help='Connect to the streaming API of INSTANCE (e. g.: '
-        + 'mastodon.cloud) and append incoming new statuses to FILE.',
+        +'mastodon.cloud) and append incoming new statuses to FILE. Use '
+        +'crawling of the API via GET requests as a fallback since streaming '
+        +'is usually not publicly allowed.',
     short_help='Stream instance updates to a file.',
     epilog='Only `/api/v1/streaming/public/local` is currently implemented.'
 )

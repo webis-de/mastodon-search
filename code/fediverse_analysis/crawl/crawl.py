@@ -11,13 +11,13 @@ class Crawler:
     """Leverage Mastodon.py to retrieve data from a Mastodon instance via API
     GET requests.
     """
-    def __init__(self, instance: str) -> None:
+    def __init__(self, instance: str, save: _Save = _Save()) -> None:
         """Arguments:
         instance -- an instance's base URI, e. g.: 'pawoo.net'.
         """
         self.instance = instance
         self.mastodon = mstdn.Mastodon(api_base_url=self.instance)
-        self.save = _Save()
+        self.save = save
         self.max_wait = 3600
 
     def _crawl_local_updates(self, min_id: int = None) -> None:
@@ -73,6 +73,7 @@ class Crawler:
         """Use `_crawl_local_updates` to get new Mastodon statuses and write
         them to a file.
         """
+        last_id = None
         if (max_wait_time):
             self.wait_time = max_wait_time
         try:
