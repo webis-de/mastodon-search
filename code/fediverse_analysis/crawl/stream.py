@@ -1,5 +1,4 @@
 import mastodon as mstdn
-from elasticsearch import AuthenticationException
 from sys import exit
 from typing import TextIO
 
@@ -37,13 +36,6 @@ class Streamer:
                     print(e)
                     exit(1)
 
-    def stream_updates_to_file(self, file: TextIO) -> None:
-        """Connect to the streaming API of the Mastodon instance and receive
-        new public statuses. Write the statuses as JSON Lines to a file.
-        """
-        self.save.output_file = file
-        self._stream_local_updates()
-
     def stream_updates_to_es(
         self,
         host: str,
@@ -55,15 +47,14 @@ class Streamer:
         """Connect to the streaming API of the Mastodon instance and receive
         new public statuses. Write the statuses to Elasticsearch.
         """
-        try:
-            self.save.init_es_connection(host, index, password, port, username)
-        except ValueError as e:
-            print('URL must include scheme and host '
-                + 'e. g. https://localhost')
-            exit(1)
-        except AuthenticationException:
-            print('Authentication failed. Wrong username and/or password.')
-            exit(1)
+        self.save.init_es_connection(host, index, password, port, username)
+        self._stream_local_updates()
+
+    def stream_updates_to_file(self, file: TextIO) -> None:
+        """Connect to the streaming API of the Mastodon instance and receive
+        new public statuses. Write the statuses as JSON Lines to a file.
+        """
+        self.save.output_file = file
         self._stream_local_updates()
 
 

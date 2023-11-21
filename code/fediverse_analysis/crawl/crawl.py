@@ -66,14 +66,7 @@ class Crawler:
         """
         if (max_wait_time):
             self.wait_time = max_wait_time
-        try:
-            self.save.init_es_connection(host, index, password, port, username)
-        except ValueError as e:
-            print(e)
-            exit(1)
-        except AuthenticationException:
-            print('Authentication failed. Wrong username and/or password.')
-            exit(1)
+        self.save.init_es_connection(host, index, password, port, username)
         self._crawl_local_updates()
 
     def crawl_to_file(self, filename: str, max_wait_time: int = None) -> None:

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from elasticsearch import AuthenticationException
 from elasticsearch_dsl import connections, Index
 from json import dumps
 from uuid import NAMESPACE_URL, uuid5
@@ -60,12 +61,23 @@ class _Save:
         username: str = ''
     ) -> None:
         es_host = host + ':' + str(port)
-        self.es_connection = connections.create_connection(
-            hosts=es_host, basic_auth=(username, password))
+        try:
+            self.es_connection = connections.create_connection(
+                hosts=es_host, basic_auth=(username, password))
+        except ValueError as e:
+            print('URL must include scheme and host, e. g. https://localhost')
+            exit(1)
         index = Index(index)
         index.document(Status)
-        if (not index.exists(self.es_connection)):
-            index.create(self.es_connection)
+        try:
+            if (not index.exists(self.es_connection)):
+                index.create(self.es_connection)
+        except AuthenticationException:
+            print('Authentication failed. Wrong username and/or password.')
+            exit(1)
+        except Exception as e:
+            print(e)
+            exit(1)
 
     def write_status(self, status: dict, instance: str) -> None:
         """Write an ActivityPub status to the previously defined output."""
