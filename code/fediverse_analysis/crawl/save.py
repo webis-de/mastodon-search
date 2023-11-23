@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from elasticsearch import AuthenticationException
 from elasticsearch_dsl import connections, Index
 from json import dumps
@@ -11,19 +11,37 @@ class _Save:
     """Provide methods to store ActivityPub data on disk."""
     ACCOUNT = 'account'
     ACCT = 'acct'
+    APPLICATION = 'application'
     CONTENT = 'content'
     CREATED_AT = 'created_at'
     DESCRIPTION = 'description'
+    DISPLAY_NAME = 'display_name'
     EDITED_AT = 'edited_at'
+    EMOJIS = 'emojis'
+    EXPIRES_AT = 'expires_at'
     ID = 'id'
+    IN_REPLY_TO_ACCOUNT_ID = 'in_reply_to_account_id'
     IN_REPLY_TO_ID = 'in_reply_to_id'
     LANGUAGE = 'language'
     LAST_STATUS_AT = 'last_status_at'
     MEDIA_ATTACHMENTS = 'media_attachments'
+    MENTIONS = 'mentions'
+    MULTIPLE = 'multiple'
+    NAME = 'name'
+    OPTIONS = 'options'
+    POLL = 'poll'
+    REBLOG = 'reblog'
     REPLIES_COUNT = 'replies_count'
+    SENSITIVE = 'sensitive'
+    SHORTCODE = 'shortcode'
     SPOILER_TEXT = 'spoiler_text'
+    TAGS = 'tags'
     TYPE = 'type'
+    URI = 'uri'
     URL = 'url'
+    USERNAME = 'username'
+    VISIBILITY = 'visibility'
+    VOTERS_COUNT = 'voters_count'
 
     NAMESPACE_FA = uuid5(NAMESPACE_URL, 'fediverse_analysis')
     NAMESPACE_MASTODON = uuid5(NAMESPACE_FA, 'Mastodon')
@@ -45,7 +63,7 @@ class _Save:
             if isinstance(value, datetime):
                 if (not value.tzinfo):
                     iterable[key] = value.replace(
-                        tzinfo=timezone.utc).isoformat(timespec='milliseconds')
+                        tzinfo=UTC).isoformat(timespec='milliseconds')
                 else:
                     iterable[key] = value.isoformat(timespec='milliseconds')
             elif isinstance(value, dict) or isinstance(value, list):
@@ -89,24 +107,64 @@ class _Save:
             # Put status data into the ES DSL frame.
             status_uuid = uuid5(self.NAMESPACE_MASTODON,
                 instance + '/' + str(status.get(self.ID)))
+            tags = []
+            for tag in status.get(self.TAGS):
+                tags.append(tag[self.NAME])
             dsl_status = Status(
                 meta={'id': status_uuid},
+                application = status.get(self.APPLICATION),
                 content = status.get(self.CONTENT),
                 created_at = status.get(self.CREATED_AT),
+                edited_at = status.get(self.EDITED_AT),
                 id = status.get(self.ID),
                 in_reply_to_id = status.get(self.IN_REPLY_TO_ID),
+                in_reply_to_account_id = status.get(
+                    self.IN_REPLY_TO_ACCOUNT_ID),
                 instance = instance,
                 language = status.get(self.LANGUAGE),
+                last_seen = datetime.now(tz=UTC),
+                sensitive = status.get(self.SENSITIVE),
                 spoiler_text = status.get(self.SPOILER_TEXT),
-                url = status.get(self.URL)
+                tags = tags,
+                uri = status.get(self.URI),
+                url = status.get(self.URL),
+                visibility = status.get(self.VISIBILITY)
             )
+            acc = status.get(self.ACCOUNT)
             dsl_status.set_account(
-                status.get(self.ACCOUNT).get(self.ACCT))
+                acct = acc.get(self.ACCT),
+                display_name = acc.get(self.DISPLAY_NAME),
+                id = acc.get(self.ID),
+                url = acc.get(self.URL),
+                username = acc.get(self.USERNAME)
+            )
+            if (poll := status.get(self.POLL)):
+                dsl_status.set_poll(
+                    expires_at = poll.get(self.EXPIRES_AT),
+                    multiple = poll.get(self.MULTIPLE),
+                    options = poll.get(self.OPTIONS),
+                    voters_count = poll.get(self.VOTERS_COUNT)
+                )
+            if (reblog := status.get(self.REBLOG)):
+                dsl_status.set_reblog(
+                    reblog.get(self.ID),
+                    reblog.get(self.URL)
+                )
+            for emoji in status.get(self.EMOJIS):
+                dsl_status.add_emoji(
+                    emoji.get(self.SHORTCODE),
+                    emoji.get(self.URL)
+                )
             for ma in status.get(self.MEDIA_ATTACHMENTS):
                 dsl_status.add_media_attachment(
-                    ma[self.DESCRIPTION],
-                    ma[self.TYPE],
-                    ma[self.URL]
+                    ma.get(self.DESCRIPTION),
+                    ma.get(self.TYPE),
+                    ma.get(self.URL)
+                )
+            for mention in status.get(self.MENTIONS):
+                dsl_status.add_mention(
+                    mention.get(self.ACCT),
+                    mention.get(self.ID),
+                    mention.get(self.URL)
                 )
             dsl_status.save()
-
