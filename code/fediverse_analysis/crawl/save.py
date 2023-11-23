@@ -4,7 +4,7 @@ from elasticsearch_dsl import connections, Index
 from json import dumps
 from uuid import NAMESPACE_URL, uuid5
 
-from fediverse_analysis.util.mastodon import Status
+from fediverse_analysis.elastic_dsl.mastodon import Status
 
 
 class _Save:
