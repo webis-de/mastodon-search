@@ -55,7 +55,6 @@ class Crawler:
     def crawl_to_es(
         self,
         host: str,
-        index: str,
         password: str = '',
         username: str = '',
         max_wait_time: int = None,
@@ -66,7 +65,7 @@ class Crawler:
         """
         if (max_wait_time):
             self.wait_time = max_wait_time
-        self.save.init_es_connection(host, index, password, port, username)
+        self.save.init_es_connection(host, password, port, username)
         self._crawl_local_updates()
 
     def crawl_to_file(self, filename: str, max_wait_time: int = None) -> None:

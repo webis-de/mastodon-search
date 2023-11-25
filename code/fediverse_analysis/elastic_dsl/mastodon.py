@@ -79,7 +79,7 @@ class Status(Document):
     media_attachments = Nested(MediaAttachment)
     mentions = Nested(Mention)
 
-    class Index():
+    class Index:
         name = 'corpus_mastodon_statuses'
 
     def add_emoji(self, shortcode, url) -> None:

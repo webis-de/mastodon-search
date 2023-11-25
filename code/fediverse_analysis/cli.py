@@ -16,7 +16,6 @@ def main():
 )
 @click.option('-H', '--host', required=True,
     help='ES host, e. g.: https://example.com')
-@click.option('-i', '--index', required=True, help='ES index name')
 @click.option('-P', '--password', default='',
     help='ES password to your username')
 @click.option('-p', '--port', default=9200,
@@ -26,10 +25,10 @@ def main():
 @click.option('-w', '--wait', default=3600,
     help='Max. time to wait between requests in seconds. Default: 3600')
 @click.argument('instance')
-def crawl_to_es(instance, host, index, password, port, username, wait):
+def crawl_to_es(instance, host, password, port, username, wait):
     from fediverse_analysis.crawl import crawl
     crawler = crawl.Crawler(instance)
-    crawler.crawl_to_es(host, index, password, username, wait, port)
+    crawler.crawl_to_es(host, password, username, wait, port)
 
 @main.command(
     help='Crawl the API of INSTANCE (e. g.: mastodon.cloud) and save new '
@@ -58,7 +57,6 @@ def crawl_to_file(instance, filename, wait):
 )
 @click.option('-H', '--host', required=True,
     help='ES host, e. g.: https://example.com')
-@click.option('-i', '--index', required=True, help='ES index name')
 @click.option('-P', '--password', default='',
     help='ES password to your username')
 @click.option('-p', '--port', default=9200,
@@ -66,10 +64,10 @@ def crawl_to_file(instance, filename, wait):
 @click.option('-u', '--username', default='',
     help='Username for ES authentication')
 @click.argument('instance')
-def stream_to_es(instance, host, index, password, port, username):
+def stream_to_es(instance, host, password, port, username):
     from fediverse_analysis.crawl import stream
     streamer = stream.Streamer(instance)
-    streamer.stream_updates_to_es(host, index, password, port, username)
+    streamer.stream_updates_to_es(host, password, port, username)
 
 @main.command(
     help='Connect to the streaming API of INSTANCE (e. g.: '

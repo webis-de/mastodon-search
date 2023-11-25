@@ -48,7 +48,6 @@ class Streamer:
     def stream_updates_to_es(
         self,
         host: str,
-        index: str,
         password: str = '',
         port: int = 9200,
         username: str = ''
@@ -56,7 +55,7 @@ class Streamer:
         """Connect to the streaming API of the Mastodon instance and receive
         new public statuses. Write the statuses to Elasticsearch.
         """
-        self.save.init_es_connection(host, index, password, port, username)
+        self.save.init_es_connection(host, password, port, username)
         self._stream_local_updates()
 
     def stream_updates_to_file(self, file: TextIO) -> None:

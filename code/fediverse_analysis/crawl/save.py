@@ -73,7 +73,6 @@ class _Save:
     def init_es_connection(
         self,
         host: str,
-        index: str,
         password: str = '',
         port: int = 9200,
         username: str = ''
@@ -85,11 +84,10 @@ class _Save:
         except ValueError as e:
             print('URL must include scheme and host, e. g. https://localhost')
             exit(1)
-        index = Index(index)
-        index.document(Status)
         try:
-            if (not index.exists(self.es_connection)):
-                index.create(self.es_connection)
+            # exists should be run every time to actually check the connection.
+            if (not Status._index.exists(self.es_connection)):
+                Status.init()
         except AuthenticationException:
             print('Authentication failed. Wrong username and/or password.')
             exit(1)
