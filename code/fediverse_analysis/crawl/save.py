@@ -121,8 +121,7 @@ class _Save:
             self.output_file.write(dumps(status, ensure_ascii=False) + '\n')
         # Elasticsearch
         else:
-            status_uuid = uuid5(self.NAMESPACE_MASTODON,
-                instance + '/' + str(status.get(self.ID)))
+            status_uuid = uuid5(self.NAMESPACE_MASTODON, status.get(self.URL))
             tags = []
             for tag in status.get(self.TAGS):
                 tags.append(tag[self.NAME])
