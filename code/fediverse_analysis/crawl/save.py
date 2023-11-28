@@ -12,6 +12,9 @@ class _Save:
     ACCOUNT = 'account'
     ACCT = 'acct'
     APPLICATION = 'application'
+    AVATAR = 'avatar'
+    BOT = 'bot'
+    CARD = 'card'
     CONTENT = 'content'
     CREATED_AT = 'created_at'
     DESCRIPTION = 'description'
@@ -19,7 +22,12 @@ class _Save:
     EDITED_AT = 'edited_at'
     EMOJIS = 'emojis'
     EXPIRES_AT = 'expires_at'
+    FOLLOWERS_COUNT = 'followers_count'
+    FOLLOWING_COUNT = 'following_count'
+    GROUP = 'group'
+    HEIGHT = 'height'
     ID = 'id'
+    IMAGE = 'image'
     IN_REPLY_TO_ACCOUNT_ID = 'in_reply_to_account_id'
     IN_REPLY_TO_ID = 'in_reply_to_id'
     LANGUAGE = 'language'
@@ -27,21 +35,29 @@ class _Save:
     MEDIA_ATTACHMENTS = 'media_attachments'
     MENTIONS = 'mentions'
     MULTIPLE = 'multiple'
+    META = 'meta'
     NAME = 'name'
     OPTIONS = 'options'
     POLL = 'poll'
+    PREVIEW_REMOTE_URL = 'preview_remote_url'
+    PREVIEW_URL = 'preview_url'
+    PROVIDER_NAME = 'provider_name'
     REBLOG = 'reblog'
+    REMOTE_URL = 'remote_url'
     REPLIES_COUNT = 'replies_count'
     SENSITIVE = 'sensitive'
     SHORTCODE = 'shortcode'
     SPOILER_TEXT = 'spoiler_text'
+    STATUSES_COUNT = 'statuses_count'
     TAGS = 'tags'
+    TITLE = 'title'
     TYPE = 'type'
     URI = 'uri'
     URL = 'url'
     USERNAME = 'username'
     VISIBILITY = 'visibility'
     VOTERS_COUNT = 'voters_count'
+    WIDTH = 'width'
 
     NAMESPACE_FA = uuid5(NAMESPACE_URL, 'fediverse_analysis')
     NAMESPACE_MASTODON = uuid5(NAMESPACE_FA, 'Mastodon')
@@ -95,23 +111,28 @@ class _Save:
             print(e)
             exit(1)
 
-    def write_status(self, status: dict, instance: str) -> None:
-        """Write an ActivityPub status to the previously defined output."""
+    def write_status(self, status: dict, instance: str, method: str) -> None:
+        """Write an ActivityPub status to the previously defined output.
+        Arguments:
+        method -- How the status was retrieved, e. g. 'stream'
+        """
         if (self.output_file):
             status = self.replace_datetime(status)
             self.output_file.write(dumps(status, ensure_ascii=False) + '\n')
         # Elasticsearch
         else:
-            # Put status data into the ES DSL frame.
             status_uuid = uuid5(self.NAMESPACE_MASTODON,
                 instance + '/' + str(status.get(self.ID)))
             tags = []
             for tag in status.get(self.TAGS):
                 tags.append(tag[self.NAME])
+            # Put status data into the ES DSL frame.
             dsl_status = Status(
                 meta={'id': status_uuid},
-                application = status.get(self.APPLICATION),
+                api_url = ('https://' + instance
+                           + '/api/v1/statuses/' + str(status.get(self.ID))),
                 content = status.get(self.CONTENT),
+                crawl_method = method,
                 created_at = status.get(self.CREATED_AT),
                 edited_at = status.get(self.EDITED_AT),
                 id = status.get(self.ID),
@@ -131,14 +152,34 @@ class _Save:
             acc = status.get(self.ACCOUNT)
             dsl_status.set_account(
                 acct = acc.get(self.ACCT),
+                avatar = acc.get(self.AVATAR),
+                bot = acc.get(self.BOT),
                 display_name = acc.get(self.DISPLAY_NAME),
+                followers_count = acc.get(self.FOLLOWERS_COUNT),
+                following_count = acc.get(self.FOLLOWING_COUNT),
+                group = acc.get(self.GROUP),
                 id = acc.get(self.ID),
+                statuses_count = acc.get(self.STATUSES_COUNT),
                 url = acc.get(self.URL),
                 username = acc.get(self.USERNAME)
             )
+            if (app := status.get(self.APPLICATION)):
+                dsl_status.set_application(app)
+            if (card := status.get(self.CARD)):
+                dsl_status.set_card(
+                    description = status.get(self.DESCRIPTION),
+                    height = status.get(self.HEIGHT),
+                    image = status.get(self.IMAGE),
+                    language = status.get(self.LANGUAGE),
+                    provider_name = status.get(self.PROVIDER_NAME),
+                    type = status.get(self.TYPE),
+                    title = status.get(self.TITLE),
+                    url = status.get(self.URL),
+                    width = status.get(self.WIDTH))
             if (poll := status.get(self.POLL)):
                 dsl_status.set_poll(
                     expires_at = poll.get(self.EXPIRES_AT),
+                    id = poll.get(self.ID),
                     multiple = poll.get(self.MULTIPLE),
                     options = poll.get(self.OPTIONS),
                     voters_count = poll.get(self.VOTERS_COUNT)
@@ -154,15 +195,27 @@ class _Save:
                     emoji.get(self.URL)
                 )
             for ma in status.get(self.MEDIA_ATTACHMENTS):
+                if (ma.get(self.REMOTE_URL)):
+                    url = ma.get(self.REMOTE_URL)
+                else:
+                    url = ma.get(self.URL)
+                if (ma.get(self.PREVIEW_REMOTE_URL)):
+                    preview_url = ma.get(self.PREVIEW_REMOTE_URL)
+                else:
+                    preview_url = ma.get(self.PREVIEW_URL)
                 dsl_status.add_media_attachment(
                     ma.get(self.DESCRIPTION),
+                    ma.get(self.ID),
+                    ma.get(self.META),
+                    preview_url,
                     ma.get(self.TYPE),
-                    ma.get(self.URL)
+                    url
                 )
             for mention in status.get(self.MENTIONS):
                 dsl_status.add_mention(
                     mention.get(self.ACCT),
                     mention.get(self.ID),
-                    mention.get(self.URL)
+                    mention.get(self.URL),
+                    mention.get(self.USERNAME)
                 )
             dsl_status.save()

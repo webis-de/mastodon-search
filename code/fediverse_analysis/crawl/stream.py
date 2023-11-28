@@ -77,4 +77,5 @@ class _UpdateStreamListener(mstdn.StreamListener):
 
     def on_update(self, status) -> None:
         self.streamer.last_seen_id = status[_Save.ID]
-        self.save.write_status(status, self.instance)
+        self.save.write_status(status, self.instance,
+            '/api/v1/streaming/public/local')

@@ -35,7 +35,8 @@ class Crawler:
             if (statuses):
                 min_id = statuses[0].get(self.save.ID)
                 for status in statuses:
-                    self.save.write_status(status, self.instance)
+                    self.save.write_status(status, self.instance,
+                        '/api/v1/timelines/public?local=True')
             # Adjust wait time between requests to actual activity
             if (len(statuses) == 40):
                 if(wait_time > 3):
