@@ -19,15 +19,15 @@ class Streamer:
         self.mastodon = mstdn.Mastodon(api_base_url=self.instance)
         self.save = _Save()
 
-    def _stream_local_updates(self) -> None:
+    def _stream_updates(self) -> None:
         """Connect to the streaming API of the Mastodon instance and receive
-        new public, local statuses. Use crawling of the API via GET requests
+        new public statuses. Use crawling of the API via GET requests
         as a fallback.
         """
         stream_listener = _UpdateStreamListener(self.instance, self.save, self)
         while True:
             try:
-                self.mastodon.stream_public(stream_listener, local=True)
+                self.mastodon.stream_public(stream_listener)
             except mstdn.MastodonVersionError:
                 print(f'{self.instance} does not support streaming.')
                 break
@@ -43,7 +43,7 @@ class Streamer:
                 break
         print('Falling back to crawling.')
         crawler = Crawler(self.instance, self.save)
-        crawler._crawl_local_updates(self.last_seen_id)
+        crawler._crawl_updates(self.last_seen_id)
 
     def stream_updates_to_es(
         self,
@@ -56,14 +56,14 @@ class Streamer:
         new public statuses. Write the statuses to Elasticsearch.
         """
         self.save.init_es_connection(host, password, port, username)
-        self._stream_local_updates()
+        self._stream_updates()
 
     def stream_updates_to_file(self, file: TextIO) -> None:
         """Connect to the streaming API of the Mastodon instance and receive
         new public statuses. Write the statuses as JSON Lines to a file.
         """
         self.save.output_file = file
-        self._stream_local_updates()
+        self._stream_updates()
 
 
 class _UpdateStreamListener(mstdn.StreamListener):
@@ -78,4 +78,4 @@ class _UpdateStreamListener(mstdn.StreamListener):
     def on_update(self, status) -> None:
         self.streamer.last_seen_id = status[_Save.ID]
         self.save.write_status(status, self.instance,
-            'api/v1/streaming/public/local')
+            'api/v1/streaming/public')

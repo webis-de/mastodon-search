@@ -20,15 +20,15 @@ class Crawler:
         self.save = save
         self.max_wait = 3600
 
-    def _crawl_local_updates(self, min_id: int = None) -> None:
-        """Poll local public timeline of a Mastodon instance via an API call
+    def _crawl_updates(self, min_id: int = None) -> None:
+        """Poll public timeline of a Mastodon instance via an API call
         to get new statuses.
         """
         wait_time = 60
         while True:
             try:
                 statuses = self.mastodon.timeline(
-                    timeline='public', local=True, limit=40, min_id=min_id)
+                    timeline='public', limit=40, min_id=min_id)
             except Exception as e:
                 print(e)
                 break
@@ -36,7 +36,7 @@ class Crawler:
                 min_id = statuses[0].get(self.save.ID)
                 for status in statuses:
                     self.save.write_status(status, self.instance,
-                        'api/v1/timelines/public?local=True')
+                        'api/v1/timelines/public')
             # Adjust wait time between requests to actual activity
             if (len(statuses) == 40):
                 if(wait_time > 3):
@@ -61,16 +61,16 @@ class Crawler:
         max_wait_time: int = None,
         port: int = 9200
     ) -> None:
-        """Use `_crawl_local_updates` to get new Mastodon statuses and write
+        """Use `_crawl_updates` to get new Mastodon statuses and write
         them to an Elasticsearch instance.
         """
         if (max_wait_time):
             self.wait_time = max_wait_time
         self.save.init_es_connection(host, password, port, username)
-        self._crawl_local_updates()
+        self._crawl_updates()
 
     def crawl_to_file(self, filename: str, max_wait_time: int = None) -> None:
-        """Use `_crawl_local_updates` to get new Mastodon statuses and write
+        """Use `_crawl_updates` to get new Mastodon statuses and write
         them to a file.
         """
         last_id = None
@@ -98,4 +98,4 @@ class Crawler:
             pass
         with open(filename, 'a') as f:
             self.save.output_file = f
-            self._crawl_local_updates(last_id)
+            self._crawl_updates(last_id)
