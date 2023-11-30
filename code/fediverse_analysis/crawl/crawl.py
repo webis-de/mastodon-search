@@ -1,6 +1,6 @@
 import mastodon as mstdn
 from json import loads
-from sys import exit
+from sys import exit, stderr
 from time import sleep
 from typing import TextIO
 
@@ -26,32 +26,36 @@ class Crawler:
         """
         wait_time = 60
         while True:
+            statuses = None
             try:
                 statuses = self.mastodon.timeline(
                     timeline='public', limit=40, min_id=min_id)
             except Exception as e:
-                print(e)
-                break
+                print(e, file=stderr)
+            # Sometimes we get 'Connection reset by peer' and don't have
+            # any new statuses.
             if (statuses):
                 min_id = statuses[0].get(self.save.ID)
                 for status in statuses:
                     self.save.write_status(status, self.instance,
                         'api/v1/timelines/public')
-            # Adjust wait time between requests to actual activity
-            if (len(statuses) == 40):
-                if(wait_time > 3):
-                    wait_time *= 0.9
-            # Never go above a set maximum
-            elif (wait_time >= self.max_wait):
-                wait_time = self.max_wait
-            # Go up quick on small instances
-            elif (len(statuses) == 0):
-                wait_time *= 2
-            elif (len(statuses) <= 3):
-                wait_time *= 1.5
-            elif (len(statuses) <= 10):
-                wait_time *= 1.1
-            sleep(wait_time)
+                # Adjust wait time between requests to actual activity
+                if (len(statuses) == 40):
+                    if(wait_time > 3):
+                        wait_time *= 0.9
+                # Never go above a set maximum
+                elif (wait_time >= self.max_wait):
+                    wait_time = self.max_wait
+                # Go up quick on small instances
+                elif (len(statuses) == 0):
+                    wait_time *= 2
+                elif (len(statuses) <= 3):
+                    wait_time *= 1.5
+                elif (len(statuses) <= 10):
+                    wait_time *= 1.1
+                sleep(wait_time)
+            else:
+                sleep(30)
 
     def crawl_to_es(
         self,
