@@ -141,6 +141,7 @@ class _Save:
                 instance = instance,
                 language = status.get(self.LANGUAGE),
                 last_seen = datetime.now(tz=UTC),
+                local = (acc.get(self.ACCT) == acc.get(self.USERNAME)),
                 sensitive = status.get(self.SENSITIVE),
                 spoiler_text = status.get(self.SPOILER_TEXT),
                 tags = tags,

@@ -107,6 +107,8 @@ class Status(Document):
     language: str = Keyword()
     # Custom attribute
     last_seen: datetime = Date()
+    # Custom attribute: if this status originates from the instance itself
+    local: bool = Boolean()
     poll: Poll = Object(Poll)
     reblog: Reblog = Object(Reblog)
     # On media: Indicates NSFW. / Activates click to show.
