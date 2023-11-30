@@ -134,10 +134,10 @@ class _Save:
                 crawl_method = method,
                 created_at = status.get(self.CREATED_AT),
                 edited_at = status.get(self.EDITED_AT),
-                id = status.get(self.ID),
-                in_reply_to_id = status.get(self.IN_REPLY_TO_ID),
-                in_reply_to_account_id = status.get(
-                    self.IN_REPLY_TO_ACCOUNT_ID),
+                id = str(status.get(self.ID)),
+                in_reply_to_id = str(status.get(self.IN_REPLY_TO_ID)),
+                in_reply_to_account_id = str(
+                    status.get(self.IN_REPLY_TO_ACCOUNT_ID)),
                 instance = instance,
                 language = status.get(self.LANGUAGE),
                 last_seen = datetime.now(tz=UTC),
@@ -157,7 +157,7 @@ class _Save:
                 followers_count = acc.get(self.FOLLOWERS_COUNT),
                 following_count = acc.get(self.FOLLOWING_COUNT),
                 group = acc.get(self.GROUP),
-                id = acc.get(self.ID),
+                id = str(acc.get(self.ID)),
                 statuses_count = acc.get(self.STATUSES_COUNT),
                 url = acc.get(self.URL),
                 username = acc.get(self.USERNAME)
@@ -178,14 +178,14 @@ class _Save:
             if (poll := status.get(self.POLL)):
                 dsl_status.set_poll(
                     expires_at = poll.get(self.EXPIRES_AT),
-                    id = poll.get(self.ID),
+                    id = str(poll.get(self.ID)),
                     multiple = poll.get(self.MULTIPLE),
                     options = poll.get(self.OPTIONS),
                     voters_count = poll.get(self.VOTERS_COUNT)
                 )
             if (reblog := status.get(self.REBLOG)):
                 dsl_status.set_reblog(
-                    reblog.get(self.ID),
+                    str(reblog.get(self.ID)),
                     reblog.get(self.URL)
                 )
             for emoji in status.get(self.EMOJIS):
@@ -204,7 +204,7 @@ class _Save:
                     preview_url = ma.get(self.PREVIEW_URL)
                 dsl_status.add_media_attachment(
                     ma.get(self.DESCRIPTION),
-                    ma.get(self.ID),
+                    str(ma.get(self.ID)),
                     ma.get(self.META),
                     preview_url,
                     ma.get(self.TYPE),
@@ -213,7 +213,7 @@ class _Save:
             for mention in status.get(self.MENTIONS):
                 dsl_status.add_mention(
                     mention.get(self.ACCT),
-                    mention.get(self.ID),
+                    str(mention.get(self.ID)),
                     mention.get(self.URL),
                     mention.get(self.USERNAME)
                 )
