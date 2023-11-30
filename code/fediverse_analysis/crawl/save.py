@@ -57,6 +57,7 @@ class _Save:
     USERNAME = 'username'
     VISIBILITY = 'visibility'
     VOTERS_COUNT = 'voters_count'
+    WEBSITE = 'website'
     WIDTH = 'width'
 
     NAMESPACE_FA = uuid5(NAMESPACE_URL, 'fediverse_analysis')
@@ -111,6 +112,9 @@ class _Save:
             print(e)
             exit(1)
 
+    def replace(self, string: str) -> str:
+        return (string if string else None)
+
     def write_status(self, status: dict, instance: str, method: str) -> None:
         """Write an ActivityPub status to the previously defined output.
         Arguments:
@@ -126,6 +130,7 @@ class _Save:
             for tag in status.get(self.TAGS):
                 tags.append(tag[self.NAME])
             # Put status data into the ES DSL frame.
+            acc = status.get(self.ACCOUNT)
             dsl_status = Status(
                 meta={'id': status_uuid},
                 api_url = ('https://' + instance
@@ -143,13 +148,12 @@ class _Save:
                 last_seen = datetime.now(tz=UTC),
                 local = (acc.get(self.ACCT) == acc.get(self.USERNAME)),
                 sensitive = status.get(self.SENSITIVE),
-                spoiler_text = status.get(self.SPOILER_TEXT),
+                spoiler_text = self.replace(status.get(self.SPOILER_TEXT)),
                 tags = tags,
                 uri = status.get(self.URI),
                 url = status.get(self.URL),
                 visibility = status.get(self.VISIBILITY)
             )
-            acc = status.get(self.ACCOUNT)
             dsl_status.set_account(
                 acct = acc.get(self.ACCT),
                 avatar = acc.get(self.AVATAR),
@@ -164,16 +168,17 @@ class _Save:
                 username = acc.get(self.USERNAME)
             )
             if (app := status.get(self.APPLICATION)):
-                dsl_status.set_application(app)
+                dsl_status.set_application(
+                    app.get(self.NAME), app.get(self.WEBSITE))
             if (card := status.get(self.CARD)):
                 dsl_status.set_card(
-                    description = status.get(self.DESCRIPTION),
+                    description = self.replace(status.get(self.DESCRIPTION)),
                     height = status.get(self.HEIGHT),
                     image = status.get(self.IMAGE),
-                    language = status.get(self.LANGUAGE),
-                    provider_name = status.get(self.PROVIDER_NAME),
+                    language = self.replace(status.get(self.LANGUAGE)),
+                    provider_name = self.replace(status.get(self.PROVIDER_NAME)),
                     type = status.get(self.TYPE),
-                    title = status.get(self.TITLE),
+                    title = self.replace(status.get(self.TITLE)),
                     url = status.get(self.URL),
                     width = status.get(self.WIDTH))
             if (poll := status.get(self.POLL)):
@@ -195,21 +200,14 @@ class _Save:
                     emoji.get(self.URL)
                 )
             for ma in status.get(self.MEDIA_ATTACHMENTS):
-                if (ma.get(self.REMOTE_URL)):
-                    url = ma.get(self.REMOTE_URL)
-                else:
-                    url = ma.get(self.URL)
-                if (ma.get(self.PREVIEW_REMOTE_URL)):
-                    preview_url = ma.get(self.PREVIEW_REMOTE_URL)
-                else:
-                    preview_url = ma.get(self.PREVIEW_URL)
                 dsl_status.add_media_attachment(
-                    ma.get(self.DESCRIPTION),
+                    self.replace(ma.get(self.DESCRIPTION)),
                     str(ma.get(self.ID)),
                     ma.get(self.META),
-                    preview_url,
+                    ma.get(self.PREVIEW_URL),
+                    ma.get(self.REMOTE_URL),
                     ma.get(self.TYPE),
-                    url
+                    ma.get(self.URL)
                 )
             for mention in status.get(self.MENTIONS):
                 dsl_status.add_mention(

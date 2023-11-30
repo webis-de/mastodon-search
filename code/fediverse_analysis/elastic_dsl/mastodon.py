@@ -52,6 +52,7 @@ class MediaAttachment(InnerDoc):
     description: str = Text()
     id: str = Keyword()
     preview_url: str = Text()
+    remote_url: str = Text()
     type: str = Keyword()
     url: str = Text()
 
@@ -129,13 +130,15 @@ class Status(Document):
     def add_emoji(self, shortcode, url) -> None:
         self.emojis.append(Emoji(shortcode=shortcode, url=url))
 
-    def add_media_attachment(self, description, id, meta, preview_url, type, url) -> None:
+    def add_media_attachment(
+        self, description, id, meta, preview_url, remote_url, type, url
+    ) -> None:
         """meta should be the original dict that Mastodon.py gives: with an
         'original' entry that itself is a dict containing 'aspect', 'height'
         and 'width' as integers.
         """
         ma = MediaAttachment(description=description, id=id,
-            preview_url=preview_url, type=type, url=url)
+            preview_url=preview_url, remote_url=remote_url, type=type, url=url)
         if (meta):
             if (orig := meta.get('original')):
                 ma.set_meta(
@@ -164,9 +167,9 @@ class Status(Document):
             username=username
         )
 
-    def set_application(self, application: dict) -> None:
-        self.application = Application(
-            name=application.get('name'), website=application.get('website'))
+    def set_application(self, name: str, website: str) -> None:
+        if (name or website):
+            self.application = Application(name=name, website=website)
 
     def set_card(
         self, description, height, image, language,
