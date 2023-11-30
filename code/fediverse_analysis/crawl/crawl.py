@@ -41,7 +41,7 @@ class Crawler:
                         'api/v1/timelines/public')
                 # Adjust wait time between requests to actual activity
                 if (len(statuses) == 40):
-                    if(wait_time > 3):
+                    if(wait_time > 1):
                         wait_time *= 0.9
                 # Never go above a set maximum
                 elif (wait_time >= self.max_wait):
@@ -55,7 +55,7 @@ class Crawler:
                     wait_time *= 1.1
                 sleep(wait_time)
             else:
-                sleep(30)
+                sleep(10)
 
     def crawl_to_es(
         self,
