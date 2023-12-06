@@ -246,6 +246,7 @@ class Analyzer:
                 sample_file.write(instance + '\n')
             print('Sample size:', len(sample))
         else:
+            print('––––––––––––––––––––––––––––––––')
             for instance in sample:
                 print(instance)
         if (data_file):
