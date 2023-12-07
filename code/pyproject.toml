@@ -19,7 +19,9 @@ dependencies = [
 	'elastic-transport~=8.10',
 	'elasticsearch_dsl~=8.11',
 	'Mastodon.py~=1.8',
+	'notebook~=7.0',
 	'numpy~=1.26',
+	'seaborn~=0.13',
 ]
 readme = 'README.md'
 requires-python = '>=3.10'
