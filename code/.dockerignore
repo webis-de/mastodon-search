@@ -1,0 +1,10 @@
+*.egg-info
+*.ipynb
+.gitignore
+.ipynb_checkpoints/
+.pytest_cache
+Dockerfile
+__pycache__/
+build/
+data
+venv/
