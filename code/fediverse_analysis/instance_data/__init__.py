@@ -1,1 +1,1 @@
-__all__ = ['analyze']
+__all__ = ['analyze', 'obtain']

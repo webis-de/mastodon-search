@@ -78,6 +78,23 @@ def crawl_to_file(instance, filename, wait):
     crawler.crawl_to_file(filename, wait)
 
 @main.command(
+    help='Read an instance list from NODES_FILE, query all instances for '
+        +'`nodeinfo` and `instance/activity` and save the data to OUT_FILE. '
+        +'NODES_FILE should be a single JSON array, for example this file: '
+        +'https://nodes.fediverse.party/nodes.json . Data is appended to '
+        +'OUT_FILE. The bottom-most instance is read, this program will '
+        +'resume from there.',
+    short_help='Obtain data from fediverse instances.',
+)
+@click.argument('nodes_file', type=click.File('r'), required=True)
+@click.argument('out_file', type=click.Path(
+    dir_okay=False, writable=True), required=True)
+def obtain_instance_data(nodes_file, out_file):
+    from fediverse_analysis.instance_data import obtain
+    obtain.get_instances_data(nodes_file, out_file)
+
+
+@main.command(
     help='Connect to the streaming API of INSTANCE (e. g.: mastodon.cloud) '
         +'and save incoming new statuses to Elasticsearch (ES). Use crawling '
         +'of the API via GET requests as a fallback since streaming is '
