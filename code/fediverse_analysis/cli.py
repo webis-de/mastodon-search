@@ -19,24 +19,18 @@ def calculate_correlation(file):
     an.correlate()
 
 @main.command(
-    help='Analyze Mastodon instance activity data to find instances to crawl'
-        +'by using stratified sampling.'
-        +'RAW_DATA_FILE must contain crawled instance data. If given, this'
-        +'program will write the sampled instances to SAMPLE_FILE, one '
-        +'instance per line; and the sampled instances plus their data as '
-        +'json dump to SAMPLE_FILE_WITH_DATA',
+    help='Analyze Mastodon instance activity data to find instances to crawl '
+        +'by using 10-percentile stratified sampling. '
+        +'RAW_DATA_FILE must contain crawled instance data. The sample will '
+        +'be written to OUT_FILE. Previous contents of OUT_FILE will be lost.',
     short_help='Find Mastodon instances to crawl.',
 )
 @click.argument('raw_data_file', type=click.File('r'), required=True)
-@click.argument('sample_file', type=click.File('w+'), required=False)
-@click.argument('data_file', type=click.File('w+'), required=False)
-@click.option('-s', '--sample-size', default=1000,
-    help='How many instances should be chosen. This will differ due to '
-    +'rounding. Default: 1000')
-def choose_instances(raw_data_file, sample_file, data_file, sample_size, ):
+@click.argument('out_file', type=click.File('w+'), required=True)
+def choose_instances(raw_data_file, out_file):
     from fediverse_analysis.instance_data import analyze
     an = analyze.Analyzer(raw_data_file)
-    an.stratify(sample_file, data_file, sample_size)
+    an.stratify(out_file)
 
 @main.command(
     help='Crawl the API of INSTANCE (e. g.: mastodon.cloud) '
