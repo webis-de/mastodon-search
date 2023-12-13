@@ -12,7 +12,7 @@ class Streamer:
     """
     def __init__(self, instance: str) -> None:
         """Arguments:
-        instance -- an instance's base URI, e. g.: 'pawoo.net'.
+        instance -- an instance's base URI, e. g.: 'mastodon.social'.
         """
         self.instance = instance
         self.last_seen_id = None
@@ -56,13 +56,6 @@ class Streamer:
         new public statuses. Write the statuses to Elasticsearch.
         """
         self.save.init_es_connection(host, password, port, username)
-        self._stream_updates()
-
-    def stream_updates_to_file(self, file: TextIO) -> None:
-        """Connect to the streaming API of the Mastodon instance and receive
-        new public statuses. Write the statuses as JSON Lines to a file.
-        """
-        self.save.output_file = file
         self._stream_updates()
 
 

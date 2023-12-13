@@ -1,8 +1,6 @@
 import mastodon as mstdn
-from json import loads
 from sys import exit, stderr
 from time import sleep
-from typing import TextIO
 
 from fediverse_analysis.crawl.save import _Save
 
@@ -72,34 +70,3 @@ class Crawler:
             self.wait_time = max_wait_time
         self.save.init_es_connection(host, password, port, username)
         self._crawl_updates()
-
-    def crawl_to_file(self, filename: str, max_wait_time: int = None) -> None:
-        """Use `_crawl_updates` to get new Mastodon statuses and write
-        them to a file.
-        """
-        last_id = None
-        if (max_wait_time):
-            self.wait_time = max_wait_time
-        try:
-            with open(filename, 'rb') as f:
-                try:
-                    # While seeking is slower on small files (still not very
-                    # expensive absolutely), it's way faster on large files.
-                    f.seek(-2, 2)
-                    # Seek to first line with content
-                    while (f.read(1) != b'}'):
-                        f.seek(-2, 1)
-                    f.seek(-1024, 1)
-                    # Seek to start of line
-                    while (f.read(1) != b'\n'):
-                        f.seek(-2, 1)
-                # In case of an empty/whitespace only file.
-                except OSError:
-                    f.seek(0)
-                else:
-                    last_id = loads(f.readline().decode())[_Save.ID]
-        except FileNotFoundError:
-            pass
-        with open(filename, 'a') as f:
-            self.save.output_file = f
-            self._crawl_updates(last_id)

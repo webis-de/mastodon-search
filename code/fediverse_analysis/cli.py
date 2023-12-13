@@ -33,45 +33,6 @@ def choose_instances(raw_data_file, out_file):
     an.stratify(out_file)
 
 @main.command(
-    help='Crawl the API of INSTANCE (e. g.: mastodon.cloud) '
-        +'and save new statuses to Elasticsearch (ES).',
-    short_help='Crawl instance updates to Elasticsearch.',
-    epilog='Only `/api/v1/streaming/public/local` is currently implemented.'
-)
-@click.option('-H', '--host', required=True,
-    help='ES host, e. g.: https://example.com')
-@click.option('-P', '--password', default='',
-    help='ES password to your username')
-@click.option('-p', '--port', default=9200,
-    help='Port on which ES listens. Default: 9200')
-@click.option('-u', '--username', default='',
-    help='Username for ES authentication')
-@click.option('-w', '--wait', default=3600,
-    help='Max. time to wait between requests in seconds. Default: 3600')
-@click.argument('instance')
-def crawl_to_es(instance, host, password, port, username, wait):
-    from fediverse_analysis.crawl import crawl
-    crawler = crawl.Crawler(instance)
-    crawler.crawl_to_es(host, password, username, wait, port)
-
-@main.command(
-    help='Crawl the API of INSTANCE (e. g.: mastodon.cloud) and save new '
-        +'statuses to a file. If the file already contains statuses, read the'
-        +' last one and start crawling there. This will fetch all missed '
-        +'statuses while the crawler was not running.',
-    short_help='Crawl instance updates to file.',
-    epilog='Only `/api/v1/streaming/public/local` is currently implemented.'
-)
-@click.option('-w', '--wait', default=3600,
-    help='Max. time to wait between requests in seconds. Default: 3600')
-@click.argument('instance')
-@click.argument('filename', type=click.Path(dir_okay=False, writable=True))
-def crawl_to_file(instance, filename, wait):
-    from fediverse_analysis.crawl import crawl
-    crawler = crawl.Crawler(instance)
-    crawler.crawl_to_file(filename, wait)
-
-@main.command(
     help='Read an instance list from NODES_FILE, query all instances for '
         +'`nodeinfo` and `instance/activity` and save the data to OUT_FILE. '
         +'NODES_FILE should be a single JSON array, for example this file: '
@@ -87,14 +48,12 @@ def obtain_instance_data(nodes_file, out_file):
     from fediverse_analysis.instance_data import obtain
     obtain.get_instances_data(nodes_file, out_file)
 
-
 @main.command(
     help='Connect to the streaming API of INSTANCE (e. g.: mastodon.cloud) '
         +'and save incoming new statuses to Elasticsearch (ES). Use crawling '
         +'of the API via GET requests as a fallback since streaming is '
         +'usually not publicly allowed.',
-    short_help='Stream instance updates to Elasticsearch.',
-    epilog='Only `/api/v1/streaming/public/local` is currently implemented.'
+    short_help='Stream instance updates to Elasticsearch.'
 )
 @click.option('-H', '--host', required=True,
     help='ES host, e. g.: https://example.com')
@@ -109,18 +68,3 @@ def stream_to_es(instance, host, password, port, username):
     from fediverse_analysis.crawl import stream
     streamer = stream.Streamer(instance)
     streamer.stream_updates_to_es(host, password, port, username)
-
-@main.command(
-    help='Connect to the streaming API of INSTANCE (e. g.: '
-        +'mastodon.cloud) and append incoming new statuses to FILE. Use '
-        +'crawling of the API via GET requests as a fallback since streaming '
-        +'is usually not publicly allowed.',
-    short_help='Stream instance updates to a file.',
-    epilog='Only `/api/v1/streaming/public/local` is currently implemented.'
-)
-@click.argument('instance')
-@click.argument('file', type=click.File('a'))
-def stream_to_file(instance, file):
-    from fediverse_analysis.crawl import stream
-    streamer = stream.Streamer(instance)
-    streamer.stream_updates_to_file(file)
