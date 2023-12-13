@@ -4,7 +4,6 @@ from math import inf
 from random import choice, choices
 from sys import exit
 from typing import TextIO
-import numpy as np
 import pandas as pd
 
 class Analyzer:
