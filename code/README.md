@@ -8,66 +8,57 @@
     python3.12 -m venv venv/
     source venv/bin/activate
     ```
-3. Install dependencies:
+3. Install dependencies. To just run the code:
     ```shell
     pip install -e .
     ```
 
+    To also be able to interact with jupyter notebooks:
+    ```shell
+    pip install -e '.[notebook]'
+    ```
+
+
 ## Usage
 
+### Streaming / Crawling
 Run `fediverse_analysis` as module. It will list and explain all available commands:
 ```shell
 python3.12 -m fediverse_analysis -h
 ```
 
-`python3.12 -m fediverse_analysis <command> -h` will display a more in-depth explanation of what the command does. The commands `crawl-to-es` and `stream-to-es` are similar in their usage, as well as `crawl-to-file` and `stream-to-file`. Both streaming commands use crawling as a fallback, because streaming is not allowed on many instances.
-
-To stream new statuses from a Mastodon instance to a file, you might run:
-```shell
-python3.12 -m fediverse_analysis stream-to-file 'pawoo.net' path/to/file
-```
-For putting incoming statuses to an Elasticsearch, the command looks something like this:
+`python3.12 -m fediverse_analysis <command> -h` will display a more in-depth explanation of what the command does. The main command is `stream-to-es`. It opens a connection to a Mastodon instance and receives new statuses which are put to an Elasticsearch instance. Because streaming is not allowed on many instances, it uses GET requests to the API as a fallback. Here is an example:
 ```shell
 python3.12 -m fediverse_analysis stream-to-es -H 'http://example.com' -i 'mastodon' -u 'username' -P 'p4ssw0rd' troet.cafe
 ```
 
-### Docker
+### Obtaining and analyzing instance data
+Data of all instances is already available at `/mnt/ceph/storage/data-in-progress/data-teaching/theses/wstud-thesis-ernst/instance-data/mastodon`. If you want to try it anyway, you need a `nodes.json` first. Beware though, it takes a few hours:
+```shell
+wget 'https://nodes.fediverse.party/nodes.json'
+python -m fediverse_analysis obtain-instance-data nodes.json mastodon_instance_data
+```
+With this data you can calculate correlation between available statistics or draw a sample out of all the instances:
+```shell
+python -m fediverse_analysis calculate-correlation '/mnt/ceph/storage/data-in-progress/data-teaching/theses/wstud-thesis-ernst/instance-data/mastodon'
+python -m fediverse_analysis choose-instances '/mnt/ceph/storage/data-in-progress/data-teaching/theses/wstud-thesis-ernst/instance-data/mastodon' out.csv
+```
 
+
+### Jupyter Notebooks
+Just run `jupyter notebook <notebook-name>`, e. g.:
+```shell
+jupyter notebook mastodon_instance_data_vis.ipynb
+```
+
+
+### Docker
 To run this program in a container, first build the image with this command:
 ```shell
 docker buildx build -t fediverse_analysis .
 ```
 
-When running commands in a container, leave out `python3.12 -m fediverse_analysis`, as it is already specified as entrypoint. If you want to write to a file, use a command similar like the following one. This will effectively write to a file called `outfile` in your specified host dir.
-```shell
-docker run -v "/absolute/path/to/host/dir/:/workspace/" fediverse_analysis:latest stream-to-file 'pawoo.net' outfile
-```
-If you want to save statuses to an Elasticsearch on your localhost, the command will look like this. You might leave out `--network="host"` if it's not on your local machine.
+When running commands in a container, leave out `python3.12 -m fediverse_analysis`, as it is already specified as entrypoint. If you want to save statuses to an Elasticsearch on your localhost, the command will look like this. You might leave out `--network="host"` if it's not on your local machine.
 ```shell
 docker run --network="host" fediverse_analysis:latest stream-to-es -H 'http://localhost' -u 'username' -P 'p4ssw0rd' 'pawoo.net'
-```
-
-
-# get-instance-data.py
-
-## Requirements
-
-[Mastodon.py](https://mastodonpy.readthedocs.io/en/stable/index.html):
-```
-$ pip install Mastodon.py
-```
-
-## Usage
-
-First, retrieve an instance list like this:
-```
-$ wget https://nodes.fediverse.party/nodes.json
-```
-There are two options. Don't mix these up in one output file. To gather `nodeinfo` and `activity` from instances:
-```
-$ ./get-instance-data.py nodes.json nodes_data_1
-```
-To gather everything from `/api/v1/instance` and `/api/v2/instance`
-```
-$ ./get-instance-data.py -d nodes.json nodes_data_2
 ```
