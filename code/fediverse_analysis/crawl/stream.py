@@ -19,11 +19,18 @@ class Streamer:
         self.mastodon = mstdn.Mastodon(api_base_url=self.instance)
         self.save = _Save()
 
-    def _stream_updates(self) -> None:
+    def stream_updates_to_es(
+        self,
+        host: str,
+        password: str = '',
+        port: int = 9200,
+        username: str = ''
+    ) -> None:
         """Connect to the streaming API of the Mastodon instance and receive
-        new public statuses. Use crawling of the API via GET requests
-        as a fallback.
+        new public statuses. Write the statuses to Elasticsearch.
+        Use crawling of the API via GET requests as a fallback.
         """
+        self.save.init_es_connection(host, password, port, username)
         stream_listener = _UpdateStreamListener(self.instance, self.save, self)
         while True:
             try:
@@ -44,19 +51,6 @@ class Streamer:
         print('Falling back to crawling.')
         crawler = Crawler(self.instance, self.save)
         crawler._crawl_updates(self.last_seen_id)
-
-    def stream_updates_to_es(
-        self,
-        host: str,
-        password: str = '',
-        port: int = 9200,
-        username: str = ''
-    ) -> None:
-        """Connect to the streaming API of the Mastodon instance and receive
-        new public statuses. Write the statuses to Elasticsearch.
-        """
-        self.save.init_es_connection(host, password, port, username)
-        self._stream_updates()
 
 
 class _UpdateStreamListener(mstdn.StreamListener):

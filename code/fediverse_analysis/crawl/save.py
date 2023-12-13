@@ -65,26 +65,6 @@ class _Save:
     def __init__(self) -> None:
         self.es_connection = None
 
-    def replace_datetime(self, iterable: dict | list) -> dict | list:
-        """Iterate over possibly nested dicts and lists and replace datetime
-        objects with strings in ISO format with millisecond precision,
-        e. g.: 2000-01-01-19T00:00:00.000+00:00 .
-        """
-        if (isinstance(iterable, dict)):
-            it = iter(iterable.items())
-        else:
-            it = iter(enumerate(iterable))
-        for key, value in it:
-            if isinstance(value, datetime):
-                if (not value.tzinfo):
-                    iterable[key] = value.replace(
-                        tzinfo=UTC).isoformat(timespec='milliseconds')
-                else:
-                    iterable[key] = value.isoformat(timespec='milliseconds')
-            elif isinstance(value, dict) or isinstance(value, list):
-                iterable[key] = self.replace_datetime(value)
-        return iterable
-
     def init_es_connection(
         self,
         host: str,
@@ -109,6 +89,7 @@ class _Save:
         except Exception as e:
             print(e)
             exit(1)
+
 
     def replace(self, string: str) -> str:
         return (string if string else None)
