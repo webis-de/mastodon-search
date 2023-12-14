@@ -9,6 +9,8 @@ class Crawler:
     """Leverage Mastodon.py to retrieve data from a Mastodon instance via API
     GET requests.
     """
+    NUM_RETRIES = 3
+
     def __init__(self, instance: str, save: _Save = _Save()) -> None:
         """Arguments:
         instance -- an instance's base URI, e. g.: 'pawoo.net'.
@@ -27,13 +29,19 @@ class Crawler:
         Return the id of the latest status.
         """
         wait_time = initial_wait
+        retries = 1
         while True:
             statuses = None
             try:
                 statuses = self.mastodon.timeline(
                     timeline='public', limit=40, min_id=min_id)
-            except Exception as e:
-                print(e, file=stderr)
+            except Exception:
+                if (retries < self.NUM_RETRIES):
+                    retries += 1
+                else:
+                    raise
+            else:
+                retries = 1
             # Sometimes we get 'Connection reset by peer' and don't have
             # any new statuses.
             if (statuses):

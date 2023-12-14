@@ -99,10 +99,8 @@ class _Save:
             if (not Status._index.exists(self.es_connection)):
                 Status.init()
         except AuthenticationException:
-            print('Authentication failed. Wrong username and/or password.')
-            exit(1)
-        except Exception as e:
-            print(e)
+            print('Elasticsearch authentication failed.'
+                +'Wrong username and/or password.')
             exit(1)
 
     def replace(self, string: str) -> str:

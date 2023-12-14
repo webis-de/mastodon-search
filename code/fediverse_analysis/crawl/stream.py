@@ -61,9 +61,10 @@ class Streamer:
                 if (str(e) == 'Server ceased communication.'):
                     pass
                 else:
-                    print(e, file=stderr)
+                    print('During streaming an error occured:', e, file=stderr)
                     break
-            except Exception:
+            except Exception as e:
+                print('During streaming an error occured:', e, file=stderr)
                 break
             sleep(3)
             if (self.did_stream_work):

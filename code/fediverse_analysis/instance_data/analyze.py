@@ -1,7 +1,5 @@
-from bisect import bisect_left
-from json import dumps, loads
+from json import loads
 from math import inf
-from random import choice, choices
 from sys import exit
 from typing import TextIO
 import pandas as pd
@@ -50,17 +48,13 @@ class Analyzer:
         }
         instances = []
         raw_data = dict()
-        try:
-            # Load raw data
-            for line in file:
-                line_data = line.split(' ', maxsplit=1)
-                if(line_data[1].strip()):
-                    raw_data[line_data[0]] = loads(line_data[1])
-                else:
-                    raw_data[line_data[0]] = None
-        except Exception as e:
-            print(e)
-            exit(1)
+        # Load raw data
+        for line in file:
+            line_data = line.split(' ', maxsplit=1)
+            if(line_data[1].strip()):
+                raw_data[line_data[0]] = loads(line_data[1])
+            else:
+                raw_data[line_data[0]] = None
         # Count how many we remove for what reason and the overall number
         len_data_pre = len(raw_data)
         # "localPosts": 97009982
