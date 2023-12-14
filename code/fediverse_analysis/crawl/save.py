@@ -65,6 +65,21 @@ class _Save:
     def __init__(self) -> None:
         self.es_connection = None
 
+    def get_last_id(self, instance: str) -> str | None:
+        """Return latest id of all statuses from given instance, or None if
+        there is no status yet.
+        """
+        status = Status.search()\
+                .filter('term', instance=instance)\
+                .sort('-last_seen')[0]\
+                .source(['id'])\
+                .execute()\
+                .hits
+        if (status):
+            return status[0]['id']
+        else:
+            return None
+
     def init_es_connection(
         self,
         host: str,
@@ -89,7 +104,6 @@ class _Save:
         except Exception as e:
             print(e)
             exit(1)
-
 
     def replace(self, string: str) -> str:
         return (string if string else None)

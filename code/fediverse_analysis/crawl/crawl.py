@@ -18,11 +18,15 @@ class Crawler:
         self.save = save
         self.max_wait = 3600
 
-    def _crawl_updates(self, min_id: int = None) -> None:
+    def _crawl_updates(
+        self, initial_wait: int = 60, min_id: str = None,
+        return_on_up_to_date=False
+    ) -> str:
         """Poll public timeline of a Mastodon instance via an API call
         to get new statuses.
+        Return the id of the latest status.
         """
-        wait_time = 60
+        wait_time = initial_wait
         while True:
             statuses = None
             try:
@@ -41,7 +45,9 @@ class Crawler:
                 if (len(statuses) == 40):
                     if(wait_time > 1):
                         wait_time *= 0.9
-                # Never go above a set maximum
+                elif (return_on_up_to_date):
+                    return min_id
+                # Never go above a set maximum 
                 elif (wait_time >= self.max_wait):
                     wait_time = self.max_wait
                 # Go up quick on small instances
@@ -69,4 +75,5 @@ class Crawler:
         if (max_wait_time):
             self.wait_time = max_wait_time
         self.save.init_es_connection(host, password, port, username)
-        self._crawl_updates()
+        last_seen_id = self.save.get_last_id(self.instance)
+        self._crawl_updates(min_id=last_seen_id)
