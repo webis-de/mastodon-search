@@ -1,0 +1,10 @@
+image: ghcr.io/webis-de/sigir24-rank-fusion-evaluation
+
+backoffLimit: 10
+ttlHoursAfterFinished: 60
+
+esHost: https://elasticsearch.srv.webis.de/
+esUsername: "" # Overwrite with `--set esUsername="<REDACTED>"`
+esPassword: "" # Overwrite with `--set esPassword="<REDACTED>"`
+
+instances: "" # Overwrite with `--set-file instances="path/to/instances.txt"`

@@ -1,0 +1,58 @@
+{{ $instances := splitList "\n" $.Values.instances }}
+{{ range $instance := $instances }}
+{{ $instance = trim $instance }}
+{{ if $instance }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $.Release.Name }}-crawl-{{ $instance | kebabcase | replace "." "-" }}
+  namespace: {{ $.Release.Namespace }}
+  annotations:
+    checksum/secret-elasticsearch: {{ include (print $.Template.BasePath "/secret-elasticsearch.yml") $ | sha256sum }}
+spec:
+  completions: 1
+  parallelism: 1
+  backoffLimit: {{ $.Values.backoffLimit }}
+  ttlSecondsAfterFinished: {{ mul (mul 60 60) $.Values.ttlHoursAfterFinished }}
+  template:
+    spec:
+      containers:
+      - name: {{ $.Release.Name }}-crawl
+        image: "{{ $.Values.image }}"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            memory: 1Gi  # TODO
+            cpu: "0.5"  # TODO
+          limits:
+            memory: 2Gi  # TODO
+            cpu: "1"  # TODO
+        env:
+        - name: ES_HOST
+          value: {{ $.Values.esHost }}
+        - name: ES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Release.Name }}-elasticsearch
+              key: username
+        - name: ES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Release.Name }}-elasticsearch
+              key: password
+        command:
+        - python3.12
+        - -m
+        - fediverse_analysis
+        - stream-to-es  # TODO
+        - -H
+        - "$(ES_HOST)"
+        - -u
+        - "$(ES_USERNAME)"
+        - -P
+        - "$(ES_PASSWORD)"
+        - {{ $instance }}
+      restartPolicy: OnFailure
+---
+{{ end }}
+{{ end }}

@@ -1,0 +1,8 @@
+Installed {{ $.Chart.Name }} (release name: {{ $.Release.Name }}{{ with $.Release.Namespace }}, namespace: {{ . }}{{ end }}) for instances: {{ "" -}}
+{{- $instances := splitList "\n" $.Values.instances -}}
+{{- range $instance := $instances -}}
+{{- $instance = trim $instance -}}
+{{- if $instance }}
+- {{ $instance }}
+{{- end -}}
+{{- end -}}

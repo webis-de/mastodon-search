@@ -62,3 +62,25 @@ When running commands in a container, leave out `python3.12 -m fediverse_analysi
 ```shell
 docker run --network="host" fediverse_analysis:latest stream-to-es -H 'http://localhost' -u 'username' -P 'p4ssw0rd' 'pawoo.net'
 ```
+
+### Cluster (Helm/Kubernetes)
+Crawling can be parallelized on a Kubernetes cluster.
+
+#### Installation
+Install [Helm](https://helm.sh/docs/intro/quickstart/) and configure `kubectl` for your cluster.
+
+#### Deployment
+
+Let's deploy the Helm chart on the cluster to start the crawling:
+
+```shell
+helm --namespace wo84xel upgrade --install --dry-run --set es_username="<REDACTED>" --set es_password="<REDACTED>" --set-file instances="./data/instances.txt" mastodon-crawler ./code/helm
+```
+
+#### Uninstall
+
+To stop the crawling, you can uninstall the Helm chart:
+
+```shell
+helm --namespace wo84xel uninstall mastodon-crawler
+```
