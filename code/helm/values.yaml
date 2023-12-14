@@ -1,4 +1,4 @@
-image: ghcr.io/webis-de/sigir24-rank-fusion-evaluation
+image: registry.webis.de/code-lib/public-images/thesis-ernst:latest
 
 backoffLimit: 10
 ttlHoursAfterFinished: 60
