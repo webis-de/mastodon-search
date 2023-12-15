@@ -1,9 +1,9 @@
-image: registry.webis.de/code-lib/public-images/thesis-ernst:latest
+image: registry.webis.de/code-lib/public-images/thesis-ernst:0.1.0
 
 backoffLimit: 10
 ttlHoursAfterFinished: 60
 
-esHost: https://elasticsearch.srv.webis.de/
+esHost: https://elasticsearch.srv.webis.de
 esUsername: "" # Overwrite with `--set esUsername="<REDACTED>"`
 esPassword: "" # Overwrite with `--set esPassword="<REDACTED>"`
 

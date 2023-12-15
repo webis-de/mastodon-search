@@ -44,7 +44,7 @@ spec:
         - python3.12
         - -m
         - fediverse_analysis
-        - stream-to-es  # TODO
+        - stream-to-es
         - -H
         - "$(ES_HOST)"
         - -u

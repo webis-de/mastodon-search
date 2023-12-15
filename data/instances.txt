@@ -1,2 +1,5 @@
 mastodon.social
 troet.cafe
+sigmoid.social
+mastodon.acm.org
+mas.to
