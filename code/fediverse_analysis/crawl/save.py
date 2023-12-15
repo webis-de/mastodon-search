@@ -59,11 +59,22 @@ class _Save:
     WEBSITE = 'website'
     WIDTH = 'width'
 
+    INT_MAX = pow(2, 31) - 1
+    INT_MIN = -pow(2, 31)
     NAMESPACE_FA = uuid5(NAMESPACE_URL, 'fediverse_analysis')
     NAMESPACE_MASTODON = uuid5(NAMESPACE_FA, 'Mastodon')
 
     def __init__(self) -> None:
         self.es_connection = None
+
+    def check_int(self, num: int) -> str:
+        if (num <= self.INT_MAX and num >= self.INT_MIN):
+            return int
+        else:
+            return None
+
+    def check_str(self, string: str) -> str:
+        return (string if string else None)
 
     def get_last_id(self, instance: str) -> str | None:
         """Return latest id of all statuses from given instance, or None if
@@ -103,9 +114,6 @@ class _Save:
                 +'Wrong username and/or password.')
             exit(1)
 
-    def replace(self, string: str) -> str:
-        return (string if string else None)
-
     def write_status(self, status: dict, instance: str, method: str) -> None:
         """Write an ActivityPub status to an Elasticsearch instance.
         Arguments:
@@ -137,7 +145,7 @@ class _Save:
             last_seen = datetime.now(tz=UTC),
             local = (acc.get(self.ACCT) == acc.get(self.USERNAME)),
             sensitive = status.get(self.SENSITIVE),
-            spoiler_text = self.replace(status.get(self.SPOILER_TEXT)),
+            spoiler_text = self.check_str(status.get(self.SPOILER_TEXT)),
             tags = tags,
             uri = status.get(self.URI),
             url = status.get(self.URL),
@@ -148,11 +156,11 @@ class _Save:
             avatar = acc.get(self.AVATAR),
             bot = acc.get(self.BOT),
             display_name = acc.get(self.DISPLAY_NAME),
-            followers_count = acc.get(self.FOLLOWERS_COUNT),
-            following_count = acc.get(self.FOLLOWING_COUNT),
+            followers_count = self.check_int(acc.get(self.FOLLOWERS_COUNT)),
+            following_count = self.check_int(acc.get(self.FOLLOWING_COUNT)),
             group = acc.get(self.GROUP),
             id = str(acc.get(self.ID)),
-            statuses_count = acc.get(self.STATUSES_COUNT),
+            statuses_count = self.check_int(acc.get(self.STATUSES_COUNT)),
             url = acc.get(self.URL),
             username = acc.get(self.USERNAME)
         )
@@ -161,13 +169,13 @@ class _Save:
                 app.get(self.NAME), app.get(self.WEBSITE))
         if (card := status.get(self.CARD)):
             dsl_status.set_card(
-                description = self.replace(status.get(self.DESCRIPTION)),
+                description = self.check_str(status.get(self.DESCRIPTION)),
                 height = status.get(self.HEIGHT),
                 image = status.get(self.IMAGE),
-                language = self.replace(status.get(self.LANGUAGE)),
-                provider_name = self.replace(status.get(self.PROVIDER_NAME)),
+                language = self.check_str(status.get(self.LANGUAGE)),
+                provider_name = self.check_str(status.get(self.PROVIDER_NAME)),
                 type = status.get(self.TYPE),
-                title = self.replace(status.get(self.TITLE)),
+                title = self.check_str(status.get(self.TITLE)),
                 url = status.get(self.URL),
                 width = status.get(self.WIDTH))
         if (poll := status.get(self.POLL)):
@@ -190,7 +198,7 @@ class _Save:
             )
         for ma in status.get(self.MEDIA_ATTACHMENTS):
             dsl_status.add_media_attachment(
-                self.replace(ma.get(self.DESCRIPTION)),
+                self.check_str(ma.get(self.DESCRIPTION)),
                 str(ma.get(self.ID)),
                 ma.get(self.META),
                 ma.get(self.PREVIEW_URL),
