@@ -27,11 +27,14 @@ class Streamer:
 
     def intermediate_crawl(self) -> None:
         if (self.last_seen_id):
+            print('Fetching missed statuses.')
             self.last_seen_id = self.crawler._crawl_updates(
                 initial_wait=10,
                 min_id=self.last_seen_id,
                 return_on_up_to_date=True
             )
+        else:
+            print('Could not find any previous statuses.')
 
     def stream_updates_to_es(
         self,
@@ -59,11 +62,15 @@ class Streamer:
                 # Server closes connection, we reconnect.
                 # Sadly, there are multiple causes that trigger this error.
                 if (str(e) == 'Server ceased communication.'):
-                    pass
+                    print(f'\n{e}')
                 else:
+                    if (self.did_stream_work):
+                        print()
                     print('During streaming an error occured:', e, file=stderr)
                     break
             except Exception as e:
+                if (self.did_stream_work):
+                    print()
                 print('During streaming an error occured:', e, file=stderr)
                 break
             sleep(3)
@@ -84,6 +91,7 @@ class _UpdateStreamListener(mstdn.StreamListener):
     stream.
     """
     def __init__(self, instance: str, save: _Save, streamer: Streamer) -> None:
+        self.counter = 0
         self.instance = instance
         self.save = save
         self.streamer = streamer
@@ -92,4 +100,11 @@ class _UpdateStreamListener(mstdn.StreamListener):
         self.streamer.last_seen_id = status[_Save.ID]
         self.save.write_status(status, self.instance,
             'api/v1/streaming/public')
-        self.streamer.did_stream_work = True
+        self.counter += 1
+        if (not self.streamer.did_stream_work):
+            print('Started streaming successfully. Status count:')
+            print(self.counter, end='')
+            self.streamer.did_stream_work = True
+        else:
+            print('\r', self.counter, end='', sep='')
+

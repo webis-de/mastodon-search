@@ -30,6 +30,7 @@ class Crawler:
         """
         wait_time = initial_wait
         retries = 1
+        print('Last crawled status created at:')
         while True:
             statuses = None
             try:
@@ -49,11 +50,18 @@ class Crawler:
                 for status in statuses:
                     self.save.write_status(status, self.instance,
                         'api/v1/timelines/public')
+                print(
+                    '\r',
+                    statuses[-1].get(self.save.CREATED_AT)\
+                        .isoformat(timespec='seconds'),
+                    end='', sep=''
+                )
                 # Adjust wait time between requests to actual activity
                 if (len(statuses) == 40):
                     if(wait_time > 1):
                         wait_time *= 0.9
                 elif (return_on_up_to_date):
+                    print()
                     return min_id
                 # Never go above a set maximum 
                 elif (wait_time >= self.max_wait):
