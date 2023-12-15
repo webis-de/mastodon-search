@@ -82,7 +82,8 @@ class _Save:
         """
         status = Status.search()\
                 .filter('term', instance=instance)\
-                .sort('-last_seen')[0]\
+                .params(size=1)\
+                .sort('-last_seen')\
                 .source(['id'])\
                 .execute()\
                 .hits
