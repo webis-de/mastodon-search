@@ -69,7 +69,7 @@ class _Save:
 
     def check_int(self, num: int) -> str:
         if (num <= self.INT_MAX and num >= self.INT_MIN):
-            return int
+            return num
         else:
             return None
 
