@@ -48,7 +48,7 @@ python -m fediverse_analysis choose-instances '/mnt/ceph/storage/data-in-progres
 ### Jupyter Notebooks
 Just run `jupyter notebook <notebook-name>`, e. g.:
 ```shell
-jupyter notebook mastodon_instance_data_vis.ipynb
+jupyter notebook notebooks/mastodon_instance_data_vis.ipynb
 ```
 
 
