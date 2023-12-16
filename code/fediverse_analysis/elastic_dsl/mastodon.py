@@ -126,6 +126,10 @@ class Status(Document):
 
     class Index:
         name = 'corpus_mastodon_statuses'
+        settings = {
+            'number_of_shards': 10,
+            'number_of_replicas': 2
+        }
 
     def add_emoji(self, shortcode, url) -> None:
         self.emojis.append(Emoji(shortcode=shortcode, url=url))
