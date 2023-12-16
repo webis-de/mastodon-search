@@ -48,8 +48,8 @@ class _Save:
         else:
             return None
 
-    def check_str(self, string: str) -> str:
-        return (string if string else None)
+    def check_str(self, value: object) -> str:
+        return (str(value) if value else None)
 
     def generate_statuses(self) -> Iterator[Status]:
         while (self.statuses):
@@ -117,8 +117,8 @@ class _Save:
             created_at = status.get('created_at'),
             edited_at = status.get('edited_at'),
             id = str(status.get('id')),
-            in_reply_to_id = str(status.get('in_reply_to_id')),
-            in_reply_to_account_id = str(
+            in_reply_to_id = self.check_str(status.get('in_reply_to_id')),
+            in_reply_to_account_id = self.check_str(
                 status.get('in_reply_to_account_id')),
             instance = instance,
             language = status.get('language'),
