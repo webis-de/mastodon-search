@@ -3,7 +3,7 @@ from collections import deque
 from collections.abc import Iterator
 from datetime import datetime, UTC
 from elasticsearch import AuthenticationException
-from elasticsearch.helpers import bulk
+from elasticsearch.helpers import streaming_bulk
 from elasticsearch_dsl import connections
 from multiprocessing import active_children, Process, Value
 from time import sleep
@@ -20,8 +20,8 @@ class _Save(deque[Status]):
     # less statuses than CHUNK_SIZE. Note that saving only takes place after
     # the next status is received.
     MAX_MINUTES = 10
-    INT_MAX = pow(2, 31) - 1
-    INT_MIN = -pow(2, 31)
+    INT_MAX = 2**31 - 1
+    INT_MIN = -2**31
     NAMESPACE_FA = uuid5(NAMESPACE_URL, 'fediverse_analysis')
     NAMESPACE_MASTODON = uuid5(NAMESPACE_FA, 'Mastodon')
 
@@ -196,5 +196,11 @@ class _Save(deque[Status]):
         if (self.flush_minutes.value):
             if (len(self) >= self.CHUNK_SIZE
                     or self.flush_minutes.value >= self.MAX_MINUTES):
-                bulk(client=self.es_connection, actions=self.generate_statuses())
+                deque(
+                    streaming_bulk(
+                        client=self.es_connection,
+                        actions=self.generate_statuses()
+                    ),
+                    maxlen=0
+                )
                 self.flush_minutes.value = 0
