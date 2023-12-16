@@ -12,7 +12,7 @@ from uuid import NAMESPACE_URL, uuid5
 from fediverse_analysis.elastic_dsl.mastodon import Status
 
 
-class _Save:
+class _Save(deque[Status]):
     """Provide methods to store ActivityPub data on disk."""
     # How many statuses are saved to Elasticsearch at once.
     CHUNK_SIZE = 500
@@ -28,7 +28,6 @@ class _Save:
     def __init__(self) -> None:
         self.es_connection = None
         self.flush_minutes = Value('i', 0)
-        self.statuses = deque()
         # Kill all child processes on exit/raise or else it keeps running.
         register(
             lambda: deque((p.terminate() for p in active_children()), maxlen=0)
@@ -52,8 +51,8 @@ class _Save:
         return (str(value) if value else None)
 
     def generate_statuses(self) -> Iterator[Status]:
-        while (self.statuses):
-            yield self.statuses.popleft()
+        while (self):
+            yield self.popleft()
 
     def get_last_id(self, instance: str) -> str | None:
         """Return latest id of all statuses from given instance, or None if
@@ -193,9 +192,9 @@ class _Save:
                 mention.get('url'),
                 mention.get('username')
             )
-        self.statuses.append(dsl_status.to_dict(include_meta=True))
+        self.append(dsl_status.to_dict(include_meta=True))
         if (self.flush_minutes.value):
-            if (len(self.statuses) >= self.CHUNK_SIZE
+            if (len(self) >= self.CHUNK_SIZE
                     or self.flush_minutes.value >= self.MAX_MINUTES):
                 bulk(client=self.es_connection, actions=self.generate_statuses())
                 self.flush_minutes.value = 0
