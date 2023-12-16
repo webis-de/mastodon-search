@@ -1,10 +1,11 @@
+from atexit import register
 from collections import deque
 from collections.abc import Iterator
 from datetime import datetime, UTC
 from elasticsearch import AuthenticationException
 from elasticsearch.helpers import bulk
 from elasticsearch_dsl import connections
-from multiprocessing import Process, Value
+from multiprocessing import active_children, Process, Value
 from time import sleep
 from uuid import NAMESPACE_URL, uuid5
 
@@ -66,8 +67,9 @@ class _Save:
 
     # How many statuses are saved to Elasticsearch at once.
     CHUNK_SIZE = 500
-    # Save to Elasticsearch after this number of minutes, even if there
-    # are less statuses than CHUNK_SIZE.
+    # Save to Elasticsearch after this number of minutes, even if there are
+    # less statuses than CHUNK_SIZE. Note that saving only takes place after
+    # the next status is received.
     MAX_MINUTES = 10
     INT_MAX = pow(2, 31) - 1
     INT_MIN = -pow(2, 31)
@@ -78,6 +80,10 @@ class _Save:
         self.es_connection = None
         self.flush_minutes = Value('i', 0)
         self.statuses = deque()
+        # Kill all child processes on exit/raise or else it keeps running.
+        register(
+            lambda: deque((p.terminate() for p in active_children()), maxlen=0)
+        )
         self.timer = Process(
             target=self.bulk_timer, args=(self.flush_minutes,))
         self.timer.start()
