@@ -11,7 +11,7 @@ class Crawler:
     """
     NUM_RETRIES = 3
 
-    def __init__(self, instance: str, save: _Save = _Save()) -> None:
+    def __init__(self, instance: str, save: _Save) -> None:
         """Arguments:
         instance -- an instance's base URI, e. g.: 'pawoo.net'.
         """

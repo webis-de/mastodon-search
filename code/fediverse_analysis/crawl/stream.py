@@ -1,5 +1,6 @@
 import mastodon as mstdn
 from sys import exit, stderr
+from time import sleep
 from typing import TextIO
 
 from fediverse_analysis.crawl.crawl import Crawler
@@ -56,7 +57,8 @@ class Streamer:
                 self.did_stream_work = False
                 self.mastodon.stream_public(stream_listener)
             except mstdn.MastodonVersionError:
-                print(f'{self.instance} does not support streaming.', file=stderr)
+                print(f'{self.instance} does not support streaming '
+                    +'or is unreachable.', file=stderr)
                 break
             except mstdn.MastodonNetworkError as e:
                 # Server closes connection, we reconnect.

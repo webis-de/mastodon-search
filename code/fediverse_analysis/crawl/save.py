@@ -1,6 +1,11 @@
+from collections import deque
+from collections.abc import Iterator
 from datetime import datetime, UTC
 from elasticsearch import AuthenticationException
-from elasticsearch_dsl import connections, Index
+from elasticsearch.helpers import bulk
+from elasticsearch_dsl import connections
+from multiprocessing import Process, Value
+from time import sleep
 from uuid import NAMESPACE_URL, uuid5
 
 from fediverse_analysis.elastic_dsl.mastodon import Status
@@ -59,6 +64,11 @@ class _Save:
     WEBSITE = 'website'
     WIDTH = 'width'
 
+    # How many statuses are saved to Elasticsearch at once.
+    CHUNK_SIZE = 500
+    # Save to Elasticsearch after this number of minutes, even if there
+    # are less statuses than CHUNK_SIZE.
+    MAX_MINUTES = 10
     INT_MAX = pow(2, 31) - 1
     INT_MIN = -pow(2, 31)
     NAMESPACE_FA = uuid5(NAMESPACE_URL, 'fediverse_analysis')
@@ -66,6 +76,16 @@ class _Save:
 
     def __init__(self) -> None:
         self.es_connection = None
+        self.flush_minutes = Value('i', 0)
+        self.statuses = deque()
+        self.timer = Process(
+            target=self.bulk_timer, args=(self.flush_minutes,))
+        self.timer.start()
+
+    def bulk_timer(self, flush_minutes: Value) -> None:
+        while True:
+            sleep(60)
+            flush_minutes.value += 1
 
     def check_int(self, num: int) -> str:
         if (num <= self.INT_MAX and num >= self.INT_MIN):
@@ -76,15 +96,19 @@ class _Save:
     def check_str(self, string: str) -> str:
         return (string if string else None)
 
+    def generate_statuses(self) -> Iterator[Status]:
+        while (self.statuses):
+            yield self.statuses.popleft()
+
     def get_last_id(self, instance: str) -> str | None:
         """Return latest id of all statuses from given instance, or None if
         there is no status yet.
         """
         status = Status.search()\
                 .filter('term', instance=instance)\
-                .params(size=1)\
                 .sort('-last_seen')\
                 .source(['id'])\
+                .params(size=1)\
                 .execute()\
                 .hits
         if (status):
@@ -214,4 +238,9 @@ class _Save:
                 mention.get(self.URL),
                 mention.get(self.USERNAME)
             )
-        dsl_status.save()
+        self.statuses.append(dsl_status.to_dict(include_meta=True))
+        if (self.flush_minutes.value):
+            if (len(self.statuses) >= self.CHUNK_SIZE
+                    or self.flush_minutes.value >= self.MAX_MINUTES):
+                bulk(client=self.es_connection, actions=self.generate_statuses())
+                self.flush_minutes.value = 0
