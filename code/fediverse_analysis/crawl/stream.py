@@ -109,4 +109,3 @@ class _UpdateStreamListener(mstdn.StreamListener):
             self.streamer.did_stream_work = True
         else:
             print('\r', self.counter, end='', sep='')
-

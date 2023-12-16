@@ -46,13 +46,13 @@ class Crawler:
             # Sometimes we get 'Connection reset by peer' and don't have
             # any new statuses.
             if (statuses):
-                min_id = statuses[0].get(self.save.ID)
+                min_id = statuses[0].get('id')
                 for status in statuses:
                     self.save.write_status(status, self.instance,
                         'api/v1/timelines/public')
                 print(
                     '\r',
-                    statuses[-1].get(self.save.CREATED_AT)\
+                    statuses[-1].get('created_at')\
                         .isoformat(timespec='seconds'),
                     end='', sep=''
                 )
