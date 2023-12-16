@@ -1,11 +1,10 @@
-from atexit import register
 from collections import deque
 from collections.abc import Iterator
 from datetime import datetime, UTC
 from elasticsearch import AuthenticationException
 from elasticsearch.helpers import streaming_bulk
 from elasticsearch_dsl import connections
-from multiprocessing import active_children, Process, Value
+from threading import Thread
 from time import sleep
 from uuid import NAMESPACE_URL, uuid5
 
@@ -27,19 +26,16 @@ class _Save(deque[Status]):
 
     def __init__(self) -> None:
         self.es_connection = None
-        self.flush_minutes = Value('i', 0)
-        # Kill all child processes on exit/raise or else it keeps running.
-        register(
-            lambda: deque((p.terminate() for p in active_children()), maxlen=0)
-        )
-        self.timer = Process(
-            target=self.bulk_timer, args=(self.flush_minutes,))
+        self.flush_minutes = 0
+        # A daemon is killed when the parent exits.
+        self.timer = Thread(
+            target=self.bulk_timer, daemon=True)
         self.timer.start()
 
-    def bulk_timer(self, flush_minutes: Value) -> None:
+    def bulk_timer(self) -> None:
         while True:
             sleep(60)
-            flush_minutes.value += 1
+            self.flush_minutes += 1
 
     def check_int(self, num: int) -> str:
         if (num <= self.INT_MAX and num >= self.INT_MIN):
@@ -193,9 +189,9 @@ class _Save(deque[Status]):
                 mention.get('username')
             )
         self.append(dsl_status.to_dict(include_meta=True))
-        if (self.flush_minutes.value):
+        if (self.flush_minutes):
             if (len(self) >= self.CHUNK_SIZE
-                    or self.flush_minutes.value >= self.MAX_MINUTES):
+                    or self.flush_minutes >= self.MAX_MINUTES):
                 deque(
                     streaming_bulk(
                         client=self.es_connection,
@@ -203,4 +199,4 @@ class _Save(deque[Status]):
                     ),
                     maxlen=0
                 )
-                self.flush_minutes.value = 0
+                self.flush_minutes = 0
