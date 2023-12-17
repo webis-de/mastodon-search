@@ -42,24 +42,38 @@ class Emoji(InnerDoc):
     shortcode: str = Keyword()
     url: str = Text()
 
-# Meta information of every MediaAttachment.
-class Meta(InnerDoc):
+# Part of MediaAttachment: focal point for thumbnails
+class Focus(InnerDoc):
+    x: float = Float()
+    y: float = Float()
+
+# Meta information of MediaAttachments.
+class MetaInfo(InnerDoc):
     aspect: float = Float()
+    bitrate: int = Integer()
+    duration: float = Float()
+    frame_rate: str = Text()
     height: int = Integer()
     width: int = Integer()
 
+# Meta information of MediaAttachments.
+class Meta(InnerDoc):
+    audio_bitrate: str = Text()
+    audio_channels: str = Text()
+    audio_encode: str = Text()
+    focus: Focus() = Object(Focus)
+    original: MetaInfo() = Object(MetaInfo)
+    small: MetaInfo() = Object(MetaInfo)
+
 class MediaAttachment(InnerDoc):
+    blurhash: str = Text()
     description: str = Text()
     id: str = Keyword()
+    meta_: Meta = Object(Meta)
     preview_url: str = Text()
     remote_url: str = Text()
     type: str = Keyword()
     url: str = Text()
-
-    meta: Meta = Object(Meta)
-
-    def set_meta(self, aspect, height, width):
-        self.meta = Meta(aspect=aspect, height=height, width=width)
 
 class Mention(InnerDoc):
     acct: str = Keyword()
@@ -89,6 +103,11 @@ class Reblog(InnerDoc):
     id: str = Keyword()
     url: str = Text()
 
+class Tag(InnerDoc):
+    name: str = Keyword()
+    url: str = Text()
+
+
 class Status(Document):
     account: Account = Object(Account)
     # Custom attribute
@@ -97,25 +116,27 @@ class Status(Document):
     application: Application = Object(Application)
     card: Card = Object(Card)
     content: str = Text()
-    crawl_method = Keyword()
+    # Custom attribute
+    crawled_from_api_url = Text()
+    # Custom attribute
+    crawled_from_instance = Keyword()
     created_at: datetime = Date()
     edited_at: datetime = Date()
     id: str = Keyword()
     in_reply_to_account_id: str = Keyword()
     in_reply_to_id: str = Keyword()
-    # Custom attribute: the instance which the status originates from
+    # Custom attribute: the instance this status was posted on
     instance: str = Keyword()
+    # Custom attribute: if this status originates from the instance itself
+    is_local: bool = Boolean()
     language: str = Keyword()
     # Custom attribute
     last_seen: datetime = Date()
-    # Custom attribute: if this status originates from the instance itself
-    local: bool = Boolean()
     poll: Poll = Object(Poll)
     reblog: Reblog = Object(Reblog)
     # On media: Indicates NSFW. / Activates click to show.
     sensitive: bool = Boolean()
     spoiler_text: str = Text()
-    tags: list[str] = Keyword(multi=True)
     uri: str = Text()
     url: str = Text()
     visibility: str = Keyword()
@@ -123,6 +144,7 @@ class Status(Document):
     emojis: list[Emoji] = Nested(Emoji)
     media_attachments: list[MediaAttachment] = Nested(MediaAttachment)
     mentions: list[Mention] = Nested(Mention)
+    tags: list[str] = Nested(Tag)
 
     class Index:
         name = 'corpus_mastodon_statuses'
@@ -135,23 +157,67 @@ class Status(Document):
         self.emojis.append(Emoji(shortcode=shortcode, url=url))
 
     def add_media_attachment(
-        self, description, id, meta, preview_url, remote_url, type, url
+        self, blurhash, description, id, raw_meta,
+        preview_url, remote_url, type, url
     ) -> None:
         """meta should be the original dict that Mastodon.py gives: with an
         'original' entry that itself is a dict containing 'aspect', 'height'
         and 'width' as integers.
         """
-        ma = MediaAttachment(description=description, id=id,
-            preview_url=preview_url, remote_url=remote_url, type=type, url=url)
-        if (meta):
-            if (orig := meta.get('original')):
-                ma.set_meta(
-                    orig.get('aspect'), orig.get('height'), orig.get('width'))
-        self.media_attachments.append(ma)
+        if (raw_meta):
+            if (focus := raw_meta.get('focus')):
+                focus = Focus(
+                    x=focus.get('x'),
+                    y=focus.get('y')
+                )
+            else:
+                focus = None
+            if (orig := raw_meta.get('original')):
+                orig_meta_info = MetaInfo(
+                    aspect=orig.get('aspect'),
+                    bitrate=orig.get('bitrate'),
+                    duration=orig.get('duration'),
+                    frame_rate=orig.get('frame_rate'),
+                    height=orig.get('height'),
+                    width=orig.get('width')
+                )
+            else:
+                orig_meta_info = None
+            if (small := raw_meta.get('small')):
+                small_meta_info = MetaInfo(
+                    aspect=small.get('aspect'),
+                    bitrate=small.get('bitrate'),
+                    duration=small.get('duration'),
+                    frame_rate=small.get('frame_rate'),
+                    height=small.get('height'),
+                    width=small.get('width')
+                )
+            else:
+                small_meta_info = None
+            meta_ = Meta(
+                audio_bitrate=raw_meta.get('audio_bitrate'),
+                audio_channels=raw_meta.get('audio_channels'),
+                audio_encode=raw_meta.get('audio_encode'),
+                focus=focus,
+                original=orig_meta_info,
+                small=small_meta_info
+            )
+        else:
+            meta_ = None
+        self.media_attachments.append(
+            MediaAttachment(
+                blurhash=blurhash, description=description, id=id,
+                meta_=meta_, preview_url=preview_url,
+                remote_url=remote_url, type=type, url=url
+            )
+        )
 
     def add_mention(self, acct, id, url, username) -> None:
         self.mentions.append(
             Mention(acct=acct, id=id, url=url, username=username))
+
+    def add_tag(self, name, url) -> None:
+        self.tags.append(Tag(name=name, url=url))
 
     def set_account(
         self, acct, avatar, bot, display_name, followers_count,

@@ -89,26 +89,34 @@ class _Save(deque[Status]):
                 +'Wrong username and/or password.')
             exit(1)
 
-    def write_status(self, status: dict, instance: str, method: str) -> None:
+    def write_status(
+        self, status: dict, crawled_from_instance: str, api_method: str
+    ) -> None:
         """Write an ActivityPub status to an Elasticsearch instance.
         Arguments:
         status -- The mastodon status as received by Mastodon.py
-        instance -- Which fediverse instance this status is from
-        method -- How the status was retrieved, e. g. 'stream'
+        crawled_from_instance -- Which fediverse instance this status was
+            crawled from
+        api_method -- The API method/path, e. g. 'api/v1/streaming/public'
         """
+        # Put status data into the ES DSL document.
         status_uuid = uuid5(self.NAMESPACE_MASTODON,
-            instance + '/' + str(status.get('id')))
-        tags = []
-        for tag in status.get('tags'):
-            tags.append(tag['name'])
-        # Put status data into the ES DSL frame.
+            crawled_from_instance + '/' + str(status.get('id')))
         acc = status.get('account')
+        if (acc.get('acct') == acc.get('username')):
+            instance = crawled_from_instance
+            is_local = True
+        else:
+            instance = acc.get('acct').split('@', maxsplit=1)[1]
+            is_local = False
         dsl_status = Status(
             meta={'id': status_uuid},
-            api_url = ('https://' + instance
+            api_url=('https://' + crawled_from_instance
                        + '/api/v1/statuses/' + str(status.get('id'))),
             content = status.get('content'),
-            crawl_method = method,
+            crawled_from_api_url =
+                'https://' + crawled_from_instance + '/' + api_method,
+            crawled_from_instance = crawled_from_instance,
             created_at = status.get('created_at'),
             edited_at = status.get('edited_at'),
             id = str(status.get('id')),
@@ -116,12 +124,11 @@ class _Save(deque[Status]):
             in_reply_to_account_id = self.check_str(
                 status.get('in_reply_to_account_id')),
             instance = instance,
+            is_local = is_local,
             language = status.get('language'),
             last_seen = datetime.now(tz=UTC),
-            local = (acc.get('acct') == acc.get('username')),
             sensitive = status.get('sensitive'),
             spoiler_text = self.check_str(status.get('spoiler_text')),
-            tags = tags,
             uri = status.get('uri'),
             url = status.get('url'),
             visibility = status.get('visibility')
@@ -173,6 +180,7 @@ class _Save(deque[Status]):
             )
         for ma in status.get('media_attachments'):
             dsl_status.add_media_attachment(
+                ma.get('blurhash'),
                 self.check_str(ma.get('description')),
                 str(ma.get('id')),
                 ma.get('meta'),
@@ -188,6 +196,10 @@ class _Save(deque[Status]):
                 mention.get('url'),
                 mention.get('username')
             )
+        for tag in status.get('tags'):
+            dsl_status.add_tag(tag.get('name'), tag.get('url'))
+
+        # Save status.
         self.append(dsl_status.to_dict(include_meta=True))
         if (self.flush_minutes):
             if (len(self) >= self.CHUNK_SIZE
