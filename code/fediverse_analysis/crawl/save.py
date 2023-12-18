@@ -26,6 +26,7 @@ class _Save(deque[Status]):
 
     def __init__(self) -> None:
         self.es_connection = None
+        self.flush = False
         self.flush_minutes = 0
         # A daemon is killed when the parent exits.
         self.timer = Thread(
@@ -35,6 +36,7 @@ class _Save(deque[Status]):
     def bulk_timer(self) -> None:
         while True:
             sleep(60)
+            self.flush = True
             self.flush_minutes += 1
 
     def check_int(self, num: int) -> str:
@@ -231,7 +233,7 @@ class _Save(deque[Status]):
 
         # Save status.
         self.append(dsl_status.to_dict(include_meta=True))
-        if (self.flush_minutes):
+        if (self.flush):
             if (len(self) >= self.CHUNK_SIZE
                     or self.flush_minutes >= self.MAX_MINUTES):
                 deque(
@@ -242,3 +244,4 @@ class _Save(deque[Status]):
                     maxlen=0
                 )
                 self.flush_minutes = 0
+            self.flush = False
