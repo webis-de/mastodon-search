@@ -6,19 +6,62 @@ from elasticsearch_dsl import (
     Integer, Keyword, Nested, Object, Text
 )
 
+class Emoji(InnerDoc):
+    # Emojis are custom emojis per instance. The URL shows where one can find
+    # them. They are used in a status by writing :shortcode: .
+    shortcode: str = Keyword()
+    static_url: str = Text()
+    url: str = Text()
+    visible_in_picker: bool = Boolean()
+
+class Field(InnerDoc):
+    # Additional metadata attached to a profile as name-value pairs.
+    name: str = Text()
+    value: str = Text()
+    verified_at: datetime = Date()
+
 class Account(InnerDoc):
     # acct is handle@instance
     acct: str = Keyword()
     avatar: str = Text()
+    avatar_static: str = Text()
     bot: bool = Boolean()
+    created_at: datetime = Date()
+    discoverable: bool = Boolean()
     display_name: str = Text()
     followers_count: int = Integer()
     following_count: int = Integer()
     group: bool = Boolean()
+    handle: str = Keyword()
+    header: str = Text()
+    header_static: str = Text()
     id: str = Keyword()
+    last_status_at: datetime = Date()
+    locked: bool = Boolean()
+    noindex: bool = Boolean()
+    note: str = Text()
     statuses_count: int = Integer()
     url: str = Text()
+    uri: str = Text()
     username: str = Keyword()
+
+    emojis: list[Emoji] = Nested(Emoji)
+    fields: list[Field] = Nested(Field)
+
+    def add_emoji(
+        self, shortcode, url, static_url, visible_in_picker
+    ) -> None:
+        self.emojis.append(Emoji(
+            shortcode=shortcode,
+            url=url,
+            static_url=static_url,
+            visible_in_picker=visible_in_picker
+        ))
+
+    def add_field(self, name, value, verified_at) -> None:
+        self.fields.append(Field(
+            name=name, value=value, verified_at=verified_at
+        ))
 
 class Application(InnerDoc):
     name: str = Keyword()
@@ -26,21 +69,22 @@ class Application(InnerDoc):
 
 # A teaser of linked content.
 class Card(InnerDoc):
+    author_name: str = Text()
+    author_url: str = Text()
+    blurhash: str = Text()
     description: str = Text()
+    embed_url: str = Text()
     height: int = Integer()
     image: str = Text()
+    image_description: str = Text()
     language: str = Keyword()
     provider_name: str = Text()
-    type: str = Keyword()
+    provider_url: str = Text()
+    published_at: datetime = Date()
     title: str = Text()
+    type: str = Keyword()
     url: str = Text()
     width: int = Integer()
-
-class Emoji(InnerDoc):
-    # Emojis are custom emojis per instance. The URL shows where one can find
-    # them. They are used in a status by writing :shortcode: .
-    shortcode: str = Keyword()
-    url: str = Text()
 
 # Part of MediaAttachment: focal point for thumbnails
 class Focus(InnerDoc):
@@ -88,9 +132,11 @@ class Option(InnerDoc):
 
 class Poll(InnerDoc):
     expires_at: datetime = Date()
+    expired: bool = Boolean()
     id: str = Keyword()
     # Whether multiple selection is allowed
     multiple: bool = Boolean()
+    votes_count: int = Integer()
     voters_count: int = Integer()
 
     options: list[Option] = Nested(Option)
@@ -117,6 +163,8 @@ class Status(Document):
     card: Card = Object(Card)
     content: str = Text()
     # Custom attribute
+    crawled_at: datetime = Date()
+    # Custom attribute
     crawled_from_api_url = Text()
     # Custom attribute
     crawled_from_instance = Keyword()
@@ -130,8 +178,6 @@ class Status(Document):
     # Custom attribute: if this status originates from the instance itself
     is_local: bool = Boolean()
     language: str = Keyword()
-    # Custom attribute
-    last_seen: datetime = Date()
     poll: Poll = Object(Poll)
     reblog: Reblog = Object(Reblog)
     # On media: Indicates NSFW. / Activates click to show.
@@ -149,12 +195,19 @@ class Status(Document):
     class Index:
         name = 'corpus_mastodon_statuses'
         settings = {
-            'number_of_shards': 10,
-            'number_of_replicas': 2
+            'number_of_replicas': 2,
+            'number_of_shards': 10
         }
 
-    def add_emoji(self, shortcode, url) -> None:
-        self.emojis.append(Emoji(shortcode=shortcode, url=url))
+    def add_emoji(
+        self, shortcode, url, static_url, visible_in_picker
+    ) -> None:
+        self.emojis.append(Emoji(
+            shortcode=shortcode,
+            url=url,
+            static_url=static_url,
+            visible_in_picker=visible_in_picker
+        ))
 
     def add_media_attachment(
         self, blurhash, description, id, raw_meta,
@@ -220,51 +273,89 @@ class Status(Document):
         self.tags.append(Tag(name=name, url=url))
 
     def set_account(
-        self, acct, avatar, bot, display_name, followers_count,
-        following_count, group, id, statuses_count, url, username
+        self, acct, avatar, avatar_static, bot, created_at, discoverable,
+        display_name, emojis, fields, followers_count, following_count, group,
+        handle, header, header_static, id, last_status_at, locked, noindex,
+        note, statuses_count, uri, url, username
     ) -> None:
         self.account = Account(
             acct=acct,
             avatar=avatar,
+            avatar_static=avatar_static,
             bot=bot,
+            created_at=created_at,
+            discoverable=discoverable,
             display_name=display_name,
             followers_count=followers_count,
             following_count=following_count,
             group=group,
+            handle=handle,
+            header=header,
+            header_static=header_static,
             id=id,
+            last_status_at=last_status_at,
+            locked=locked,
+            noindex=noindex,
+            note=note,
             statuses_count=statuses_count,
+            uri=uri,
             url=url,
             username=username
         )
+        for emoji in emojis:
+            self.account.add_emoji(
+                shortcode=emoji.get('shortcode'),
+                static_url=emoji.get('static_url'),
+                url=emoji.get('url'),
+                visible_in_picker=emoji.get('visible_in_picker')
+            )
+        for field in fields:
+            self.account.add_field(
+                field.get('name'),
+                field.get('value'),
+                field.get('verified_at')
+            )
 
     def set_application(self, name: str, website: str) -> None:
         if (name or website):
             self.application = Application(name=name, website=website)
 
     def set_card(
-        self, description, height, image, language,
-        provider_name, type, title, url, width
+        self, author_name, author_url, blurhash, description, embed_url,
+        height, image, image_description, language, provider_name,
+        provider_url, published_at, title, type, url, width
     ) -> None:
         self.card = Card(
+            author_name=author_name,
+            author_url=author_url,
+            blurhash=blurhash,
             description=description,
+            embed_url=embed_url,
             height=height,
             image=image,
+            image_description=image_description,
             language=language,
             provider_name=provider_name,
-            type=type,
+            provider_url=provider_url,
+            published_at=published_at,
             title=title,
+            type=type,
             url=url,
             width=width
         )
 
     def set_poll(
-            self, expires_at, id, multiple, options, voters_count) -> None:
+            self, expires_at, expired, id, multiple,
+            options, voters_count, votes_count
+    ) -> None:
         """options should be a list of dicts, each dict being one vote option
         like this: {'title': 'Choice 1', 'votes_count': 0}
         (the default in Mastodon.py).
         """
-        poll = Poll(expires_at=expires_at, id=id, multiple=multiple,
-            voters_count=voters_count)
+        poll = Poll(
+            expires_at=expires_at, expired=expired, id=id, multiple=multiple,
+            voters_count=voters_count, votes_count=votes_count
+        )
         for option in options:
             poll.add_option(option.get('title'), option.get('votes_count'))
         self.poll = poll
