@@ -74,7 +74,7 @@ Install [Helm](https://helm.sh/docs/intro/quickstart/) and configure `kubectl` f
 Let's deploy the Helm chart on the cluster to start the crawling:
 
 ```shell
-helm --namespace wo84xel install --dry-run --set es_username="<REDACTED>" --set es_password="<REDACTED>" --set-file instances="./data/instances.txt" mastodon-crawler ./code/helm
+helm --namespace wo84xel install --dry-run --set esUsername="<REDACTED>" --set esPassword="<REDACTED>" --set-file instances="./data/instances.txt" mastodon-crawler ./code/helm
 ```
 
 #### Uninstall
