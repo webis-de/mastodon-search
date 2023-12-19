@@ -28,9 +28,9 @@ class _Save(deque[Status]):
         self.es_connection = None
         self.flush = False
         self.flush_minutes = 0
-        # A daemon is killed when the parent exits.
         self.timer = Thread(
             target=self.bulk_timer, daemon=True)
+
         self.timer.start()
 
     def bulk_timer(self) -> None:
@@ -58,7 +58,7 @@ class _Save(deque[Status]):
         """
         status = Status.search()\
                 .filter('term', instance=instance)\
-                .sort('-last_seen')\
+                .sort('-crawled_at')\
                 .source(['id'])\
                 .params(size=1)\
                 .execute()\
@@ -148,7 +148,7 @@ class _Save(deque[Status]):
             followers_count=self.check_int(acc.get('followers_count')),
             following_count=self.check_int(acc.get('following_count')),
             group=acc.get('group'),
-            handle=acc.get('username') + '@' + instance,
+            handle=(acc.get('username') + '@' + instance),
             header=acc.get('header'),
             header_static=acc.get('header_static'),
             id=str(acc.get('id')),
@@ -179,9 +179,9 @@ class _Save(deque[Status]):
                 language=self.check_str(card.get('language')),
                 provider_name=self.check_str(card.get('provider_name')),
                 provider_url=self.check_str(card.get('provider_url')),
-                published_at=self.check_str(card.get('published_at')),
+                published_at=card.get('published_at'),
                 title=self.check_str(card.get('title')),
-                type=self.check_str(card.get('type')),
+                type=card.get('type'),
                 url=self.check_str(card.get('url')),
                 width=card.get('width')
             )
