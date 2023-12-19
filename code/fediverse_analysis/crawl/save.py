@@ -53,11 +53,11 @@ class _Save(deque[Status]):
             yield self.popleft()
 
     def get_last_id(self, instance: str) -> str | None:
-        """Return latest id of all statuses from given instance, or None if
-        there is no status yet.
+        """Return latest id of all statuses that were crawled from a given
+        instance, or None if there is no status yet.
         """
         status = Status.search()\
-                .filter('term', instance=instance)\
+                .filter('term', crawled_from_instance=instance)\
                 .sort('-crawled_at')\
                 .source(['id'])\
                 .params(size=1)\
