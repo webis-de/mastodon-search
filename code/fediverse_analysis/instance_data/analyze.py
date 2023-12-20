@@ -1,31 +1,9 @@
 from json import loads
 from math import inf
-from sys import exit
+from pandas import DataFrame
 from typing import TextIO
-import pandas as pd
 
 class Analyzer:
-    ACTIVITY = 'activity'
-    LOCALPOSTS = 'localPosts'
-    LOGINS = 'logins'
-    MONTHLYACTIVE = 'activeMonth'
-    NODEINFO = 'nodeinfo'
-    REGISTRATIONS = 'registrations'
-    STATS = 'stats'
-    STATUSES = 'statuses'
-    TOTAL = 'total'
-    USAGE = 'usage'
-    USERCOUNT = 'user_count'
-    USERS = 'users'
-    WEEK = 'week'
-
-    TOTAL_USERS = 'total_users'
-    MONTHLY_USERS = 'monthly_users'
-    TOTAL_STATUSES = 'total_statuses'
-    WEEKLY_STATUSES = 'weekly_statuses'
-    WEEKLY_LOGINS = 'weekly_logins'
-    WEEKLY_REGS = 'weekly_registrations'
-
     # How many weeks are taken into account for calculation of weekly data
     num_weeks = 4
 
@@ -38,86 +16,58 @@ class Analyzer:
         self._load_data(file)
 
     def _load_data(self, file: TextIO) -> None:
-        data = {
-            self.TOTAL_USERS: [],
-            self.MONTHLY_USERS: [],
-            self.TOTAL_STATUSES: [],
-            self.WEEKLY_STATUSES: [],
-            self.WEEKLY_LOGINS: [],
-            self.WEEKLY_REGS: [],
-        }
-        instances = []
-        raw_data = dict()
+        data = []
+        len_raw_data = 0
         # Load raw data
         for line in file:
-            line_data = line.split(' ', maxsplit=1)
-            if(line_data[1].strip()):
-                raw_data[line_data[0]] = loads(line_data[1])
-            else:
-                raw_data[line_data[0]] = None
-        # Count how many we remove for what reason and the overall number
-        len_data_pre = len(raw_data)
-        # "localPosts": 97009982
-        del raw_data['mastodon.adtension.com']
-        # "localPosts": -1243
-        del raw_data['linuxjobs.social']
-        self.n_invalid += 2
-        # List is needed so we can change dict's size during iteration.
-        for instance in list(raw_data.keys()):
-            # Remove empty-valued entries (i. e. from non-Mastodon instances)
-            if not (raw_data[instance]) or not (
-                    raw_data[instance].get(self.NODEINFO)
-                    and raw_data[instance].get(self.ACTIVITY)
-            ):
-                del raw_data[instance]
-                self.n_empty += 1
+            len_raw_data += 1
+            line_dic = loads(line)
+            if not (line_dic['nodeinfo']
+                    and line_dic['activity']):
                 continue
-            if (users := raw_data[instance].get(self.NODEINFO).get(
-                    self.USAGE).get(self.USERS)):
-                data[self.TOTAL_USERS].append(users.get(self.TOTAL))
-                data[self.MONTHLY_USERS].append(
-                    users.get(self.MONTHLYACTIVE))
-                data[self.TOTAL_STATUSES].append(
-                    raw_data[instance].get(self.NODEINFO).get(
-                        self.USAGE).get(self.LOCALPOSTS))
-                instances.append(instance)
-            else:
-                del raw_data[instance]
-                self.n_invalid += 1
-                continue
-            it = iter(raw_data[instance].get(self.ACTIVITY))
+            it = iter(line_dic['activity'])
             # The latest week is in progress and not complete.
             _ = next(it)
-            statuses = 0
-            logins = 0
-            registrations = 0
-            # Some servers don't give us much more than 4 weeks of data.
-            for i in range(self.num_weeks):
-                activity_data = next(it)
-                statuses += activity_data.get(self.LOGINS)
-                logins += activity_data.get(self.STATUSES)
-                registrations += activity_data.get(self.REGISTRATIONS)
-            data[self.WEEKLY_STATUSES].append(statuses/self.num_weeks)
-            data[self.WEEKLY_LOGINS].append(logins/self.num_weeks)
-            data[self.WEEKLY_REGS].append(registrations/self.num_weeks)
-        self.df = pd.DataFrame(data, index=instances)
-        self.data_len = len(raw_data)
-        print(f'Total number of instances: {len_data_pre}')
-        print(f'Removed for (partially) no data: {self.n_empty}')
-        print(f'Removed for invalid data: {self.n_invalid}')
-        print(f'Remaining: {self.data_len}')
+            for _ in range(self.num_weeks):
+                activity = next(it)
+                data.append({
+                    'instance': line_dic['instance'],
+                    'total_users':
+                        line_dic['nodeinfo']['usage']['users']['total'],
+                    'monthly_users':
+                        line_dic['nodeinfo']['usage']['users']['activeMonth'],
+                    'total_statuses':
+                        line_dic['nodeinfo']['usage']['localPosts'],
+                    'week_statuses': activity['statuses'],
+                    'week_logins': activity['logins'],
+                    'week_registrations': activity['registrations']
+                })
+        self.df = DataFrame(data)\
+            .groupby(['instance', 'total_users', 'monthly_users', 'total_statuses'])\
+            .mean()\
+            .reset_index()\
+            .set_index('instance')\
+            .rename(
+                columns={
+                    'week_statuses': 'mean_weekly_statuses',
+                    'week_logins': 'mean_weekly_logins',
+                    'week_registrations': 'mean_weekly_registrations'
+                }
+            )
+        print(f'Total number of instances: {len_raw_data}')
+        print(f'Removed for (partially) no data: {len_raw_data - len(self.df)}')
+        print(f'Remaining: {len(self.df)}')
 
     def correlate(self) -> None:
         print('––––––––––––––––––––––––––––––––')
-        print('Available statistics (stats):')
-        data_keys_list = list(self.df.keys())
-        print(data_keys_list)
+        self.delete_invalid()
         print()
-        print('Correlation between these stats.')
+        data_keys_list = list(self.df.keys())
+        print('Correlation between all stats.')
         correlation = self.df.corr()
         print(correlation)
         print()
-        default_stat = self.TOTAL_USERS
+        default_stat = 'total_users'
         default_stat_index = data_keys_list.index(default_stat)
         print('Choosing', default_stat, 'as first stat per default.')
         print('Minimizing correlation of this stat plus two others…')
@@ -140,9 +90,17 @@ class Analyzer:
         print('-', data_keys_list[stat2_min])
         print('-', data_keys_list[stat3_min])
 
+    def delete_invalid(self) -> None:
+        # "localPosts": 97009982
+        self.df.drop('mastodon.adtension.com')
+        # "localPosts": -1243
+        self.df.drop('linuxjobs.social')
+        self.n_invalid += 2
+        print(f'Removed for invalid data: {self.n_invalid}')
+
     def stratify(self, out_file: TextIO) -> None:
         # Stats to apply quantile sampling on.
-        stats = [self.TOTAL_USERS, self.TOTAL_STATUSES, self.WEEKLY_STATUSES]
+        stats = ['total_users', 'total_statuses', 'mean_weekly_statuses']
         # Labels for the columns to be inserted
         labels = ['percentile_'+stat for stat in stats]
         # Drop columns we don't need so we can use df instead of df[…].

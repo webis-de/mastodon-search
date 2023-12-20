@@ -1,5 +1,5 @@
 from datetime import datetime, UTC
-from json import dumps, JSONDecodeError, load
+from json import dumps, JSONDecodeError, load, loads
 from mastodon import (
         Mastodon, MastodonAPIError,
         MastodonInternalServerError, MastodonNetworkError,
@@ -25,7 +25,7 @@ def get_instances_data(nodes_file: TextIO, output_file: str) -> None:
                 f.seek(-2, 2)
                 while (f.read(1) != b'\n'):
                     f.seek(-2, 1)
-                last_instance_done = f.readline().decode().split(' ', maxsplit=1)[0]
+                last_instance_done = loads(f.readline().decode()).get('instance')
             except OSError:
                 last_instance_done = ''
     except FileNotFoundError:
@@ -33,32 +33,41 @@ def get_instances_data(nodes_file: TextIO, output_file: str) -> None:
     # Get data
     with open(output_file, mode='a') as f:
         for instance in instances:
+            skip = False
             if(instance <= last_instance_done):
                 continue
             print(f'\r{instance}                                    ', end='')
             try:
                 mastodon = Mastodon(api_base_url=instance)
-                nodeinfo = mastodon.instance_nodeinfo()
             # {Index,Value}Error occur if the Mastodon version looks "weird",
             # e. g. if it's not actually a Mastodon server.
-            except (
-                    IndexError, MastodonAPIError,
-                    MastodonInternalServerError,
+            except (IndexError, MastodonVersionError, ValueError):
+                skip = True
+                nodeinfo = None
+                activity = None
+            if (not skip):
+                try:
+                    nodeinfo = mastodon.instance_nodeinfo()
+                except (
+                    MastodonAPIError, MastodonInternalServerError,
                     MastodonNetworkError, MastodonNotFoundError,
-                    MastodonVersionError, ValueError
-            ):
-                f.write(f'{instance} \n')
-                continue
-            try:
-                activity = mastodon.instance_activity()
-            except (MastodonAPIError, MastodonNetworkError,
-                    MastodonNotFoundError):
-                activity = []
-            dic = {'nodeinfo': nodeinfo, 'activity': activity}
+                    MastodonVersionError
+                ):
+                    nodeinfo = None
+                try:
+                    activity = mastodon.instance_activity()
+                except (MastodonAPIError, MastodonNetworkError,
+                        MastodonNotFoundError, MastodonVersionError):
+                    activity = None
+            dic = {
+                'instance': instance,
+                'nodeinfo': nodeinfo,
+                'activity': activity
+            }
             # Replace datetime.datetime objects by ISO strings so we can write
             # it to file as JSON.
             dic = replace_datetime(dic)
-            f.write(f'{instance} {dumps(dic)}\n')
+            f.write(f'{dumps(dic, ensure_ascii=False)}\n')
         print()
 
 def replace_datetime(iterable: dict | list) -> dict | list:
