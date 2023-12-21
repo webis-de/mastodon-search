@@ -22,11 +22,11 @@ spec:
         imagePullPolicy: IfNotPresent
         resources:
           requests:
-            memory: 1Gi  # TODO
-            cpu: "0.5"  # TODO
+            memory: 75Mi  # TODO
+            cpu: "25m"  # TODO
           limits:
-            memory: 2Gi  # TODO
-            cpu: "1"  # TODO
+            memory: 150Mi  # TODO
+            cpu: "100m"  # TODO
         env:
         - name: ES_HOST
           value: {{ $.Values.esHost }}
