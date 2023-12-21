@@ -1,7 +1,11 @@
 from json import loads
+from mastodon import Mastodon, MastodonAPIError, MastodonNetworkError
 from math import inf
-from pandas import DataFrame
+from numpy import exp
+from pandas import concat, DataFrame
+from scipy.stats import lognorm
 from typing import TextIO
+from urllib.request import urlopen
 
 class Analyzer:
     # How many weeks are taken into account for calculation of weekly data
@@ -43,7 +47,9 @@ class Analyzer:
                     'week_registrations': activity['registrations']
                 })
         self.df = DataFrame(data)\
-            .groupby(['instance', 'total_users', 'monthly_users', 'total_statuses'])\
+            .groupby([
+                'instance', 'total_users', 'monthly_users', 'total_statuses'
+            ])\
             .mean()\
             .reset_index()\
             .set_index('instance')\
@@ -54,14 +60,19 @@ class Analyzer:
                     'week_registrations': 'mean_weekly_registrations'
                 }
             )
-        print(f'Total number of instances: {len_raw_data}')
-        print(f'Removed for (partially) no data: {len_raw_data - len(self.df)}')
+
+        print(f'Number of instances in input file: {len_raw_data}')
+        print(f'Removed for (partially) no data: {len_raw_data-len(self.df)}')
+
+        dupe_len_pre = len(self.df)
+        self.df.index = self.df.index.str.strip('.')
+        self.df = self.df[~self.df.index.duplicated(keep='first')]
+
+        print(f'Removed duplicates: {dupe_len_pre - len(self.df)}')
         print(f'Remaining: {len(self.df)}')
 
     def correlate(self) -> None:
-        print('––––––––––––––––––––––––––––––––')
         self.delete_invalid()
-        print()
         data_keys_list = list(self.df.keys())
         print('Correlation between all stats.')
         correlation = self.df.corr()
@@ -76,7 +87,9 @@ class Analyzer:
         stat3_min = None
         for stat2 in range(1, len(data_keys_list)):
             for stat3 in range(stat2):
-                if ((corr_sum := correlation.iloc[stat2,stat3]
+                if (
+                    (
+                        corr_sum := correlation.iloc[stat2,stat3]
                                 + correlation.iloc[default_stat_index,stat2]
                                 + correlation.iloc[default_stat_index,stat3]
                     ) < correlation_sum_min
@@ -91,66 +104,119 @@ class Analyzer:
         print('-', data_keys_list[stat3_min])
 
     def delete_invalid(self) -> None:
+        print('––––––––––––––––––––––––––––––––')
         # "localPosts": 97009982
         self.df.drop('mastodon.adtension.com')
         # "localPosts": -1243
         self.df.drop('linuxjobs.social')
         self.n_invalid += 2
-        print(f'Removed for invalid data: {self.n_invalid}')
+        print(f'Removed for invalid data: {self.n_invalid}\n')
 
-    def stratify(self, out_file: TextIO) -> None:
-        # Stats to apply quantile sampling on.
-        stats = ['total_users', 'total_statuses', 'mean_weekly_statuses']
-        # Labels for the columns to be inserted
-        labels = ['percentile_'+stat for stat in stats]
-        # Drop columns we don't need so we can use df instead of df[…].
-        self.df.drop(
-            self.df.columns.difference(stats),
-            axis='columns', inplace=True
-        )
-        # Stat 1: Sort
-        self.df.sort_values(stats[0], inplace=True)
-        # Add a rolling count.
-        self.df.insert(0, labels[0], range(len(self.df)))
-        # Compute that to discrete integers: 0–9.
-        self.df[labels[0]] = 10 * self.df[labels[0]] // len(self.df)
-        # Do stat 2: Sort inside of groups of first stat percentiles.
-        self.df = self.df.groupby(labels[0], as_index=False).apply(
-            lambda x: x.sort_values(stats[1]))
-        # Add a rolling count inside of each group.
-        self.df.insert(
-            1, labels[1],
-            self.df.groupby(
-                (self.df[labels[0]] != self.df[labels[0]].shift(1)).cumsum()
-            ).cumcount()
-        )
-        # Get the size of each subgroup.
-        group_sizes = self.df.groupby(labels[0]).size()
-        # Compute the count per group to integers 0–9.
-        # This groupby operation takes a few seconds.
-        self.df[labels[1]] = self.df.groupby([labels[0], labels[1]])\
-            .apply(lambda x: x[labels[1]] * 10
-                            // group_sizes[x[labels[1]].index[0][0]])\
-            .droplevel([0, 1])
-        self.df = self.df.droplevel(0)
-        # Do stat 3: Pretty much the same as stat 2.
-        self.df = self.df.groupby(
-            [labels[0], labels[1]], as_index=False).apply(
-                lambda x: x.sort_values(stats[2]))
-        self.df.insert(
-            2, labels[2],
-            self.df.groupby(
-                (self.df[labels[1]] != self.df[labels[1]].shift(1)).cumsum()
-            ).cumcount()
-        )
-        group_sizes = self.df.groupby(
-            [labels[0], labels[1]], as_index=False).size()['size']
-        # Again, this groupby operation takes a few seconds.
-        self.df[labels[2]] = self.df.groupby([labels[0], labels[1], labels[2]])\
-            .apply(lambda x: x[labels[2]] * 10
-                            // group_sizes[x[labels[2]].index[0][0]]\
-            ).droplevel([0, 1, 2])
-        self.df = self.df.droplevel(0)
+    def choose(self, out_file_full: TextIO, out_file_pure: TextIO) -> None:
+        SAMPLE_SIZE = 1000
 
-        sample = self.df.groupby(labels).sample(1)
-        sample.to_csv(out_file)
+        print('––––––––––––––––––––––––––––––––')
+        cols_prob_measures = {
+            col: lognorm
+            for col in self.df.columns
+        }
+        # Estimate probability distributions over activity columns
+        distributions = {
+            col: dist.fit(self.df[col])
+            for col, dist in cols_prob_measures.items()
+        }
+        # Compute normalize activity score by dividing by the estimated
+        # probability.
+        for col, dist in cols_prob_measures.items():
+            shape, location, scale = distributions[col]
+            self.df[f"{col}_log_probability"] = dist.logpdf(
+                self.df[col], shape, location, scale)
+
+        # Compute joint probability (under assumption of independence;
+        # using log probabilities for numerical stability)
+        self.df["log_probability"] = 0
+        for col in cols_prob_measures:
+            self.df["log_probability"] += self.df[f"{col}_log_probability"]
+
+        self.df.sort_values("log_probability", inplace=True)
+        self.df["weight"] = exp(-self.df["log_probability"])
+        df_sample_pre = self.df.sample(
+            n=SAMPLE_SIZE, replace=False, weights=self.df["weight"])
+
+        # Remove instances that require a token for the timelines API.
+        df_sample = DataFrame(columns=df_sample_pre.columns)
+        deleted = []
+        save_for_later = []
+        tries = 0
+        while (True):
+            print('Testing if API is public on sample instances:')
+            i=0
+            to_delete = []
+            len_to_test = len(df_sample_pre.index)
+            for instance in df_sample_pre.index:
+                mastodon = Mastodon(
+                    api_base_url=instance,
+                    request_timeout=30,
+                    user_agent='Mastocool'
+                )
+                try:
+                    statuses = mastodon.timeline(timeline='public')
+                except MastodonAPIError:
+                    deleted.append(instance)
+                    to_delete.append(instance)
+                except MastodonNetworkError:
+                    save_for_later.append(instance)
+                i += 1
+                print('\r', i, '/', len_to_test, sep='', end='')
+            print()
+            # Retry timed out instances
+            if (save_for_later):
+                print('Retrying instances with timeouts…')
+            while(save_for_later):
+                print('\rTodo:', len(save_for_later), sep='')
+                mastodon = Mastodon(
+                    api_base_url=save_for_later[-1],
+                    request_timeout=30,
+                    user_agent='Mastocool'
+                )
+                try:
+                    statuses = mastodon.timeline(timeline='public')
+                except MastodonAPIError:
+                    deleted.append(save_for_later[-1])
+                    to_delete.append(save_for_later[-1])
+                    save_for_later.pop()
+                    tries = 0
+                except MastodonNetworkError:
+                    if (tries <= 3):
+                        tries += 1
+                    else:
+                        deleted.append(save_for_later[-1])
+                        to_delete.append(save_for_later[-1])
+                        save_for_later.pop()
+                        tries = 0
+                    continue
+                else:
+                    save_for_later.pop()
+            print()
+            df_sample = concat(
+                d for d in (
+                    df_sample, df_sample_pre.drop(to_delete)
+                ) if not d.empty
+            )
+            if (len(df_sample) >= SAMPLE_SIZE):
+                break
+            self.df.drop(df_sample_pre.index, inplace=True)
+            df_sample_pre = self.df.sample(
+                n=(SAMPLE_SIZE - len(df_sample)),
+                replace=False,
+                weights=self.df["weight"]
+            )
+
+        print(f'\n{len(deleted)} instances removed for requiring a token '
+              +f'for the timelines API or timeout:\n{deleted}')
+        df_sample.sort_index(inplace=True)
+        # Full DataFrame. Maybe we want to have that data later.
+        df_sample.to_csv(out_file_full)
+        sampled_instances = df_sample.reset_index()['instance']
+        # Pure instance list only.
+        sampled_instances.to_csv(out_file_pure, index=False, header=False)

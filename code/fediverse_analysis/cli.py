@@ -19,18 +19,23 @@ def calculate_correlation(file):
     an.correlate()
 
 @main.command(
-    help='Analyze Mastodon instance activity data to find instances to crawl '
-        +'by using 10-percentile stratified sampling. '
-        +'RAW_DATA_FILE must contain crawled instance data. The sample will '
-        +'be written to OUT_FILE. Previous contents of OUT_FILE will be lost.',
-    short_help='Find Mastodon instances to crawl.',
+    help='Analyze Mastodon instance nodeinfo and activity data to sample '
+        +'instances to crawl. This fits log-normal distribution to the '
+        +'instance data values and uses the resulting probability density '
+        +'functions as weights for sampling.\n\n'
+        +'INPUT_FILE should be the output of the `obtain_instance_data` '
+        +'command. The sample including all data is written as csv to '
+        +'OUT_FILE_FULL, the pure instance list without anything else written'
+        +'to OUT_FILE_PURE.',
+    short_help='Sample Mastodon instances to crawl.',
 )
-@click.argument('raw_data_file', type=click.File('r'), required=True)
-@click.argument('out_file', type=click.File('w+'), required=True)
-def choose_instances(raw_data_file, out_file):
+@click.argument('input_file', type=click.File('r'), required=True)
+@click.argument('out_file_full', type=click.File('w+'), required=True)
+@click.argument('out_file_pure', type=click.File('w+'), required=True)
+def choose_instances(input_file, out_file_full, out_file_pure):
     from fediverse_analysis.instance_data import analyze
-    an = analyze.Analyzer(raw_data_file)
-    an.stratify(out_file)
+    an = analyze.Analyzer(input_file)
+    an.choose(out_file_full, out_file_pure)
 
 @main.command(
     help='Read an instance list from NODES_FILE, query all instances for '
