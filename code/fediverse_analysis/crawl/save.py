@@ -78,7 +78,10 @@ class _Save(deque[Status]):
         es_host = host + ':' + str(port)
         try:
             self.es_connection = connections.create_connection(
-                hosts=es_host, basic_auth=(username, password))
+                hosts=es_host,
+                basic_auth=(username, password),
+                timeout=60
+            )
         except ValueError as e:
             print('URL must include scheme and host, e. g. https://localhost')
             exit(1)
@@ -95,9 +98,8 @@ class _Save(deque[Status]):
                     +'Wrong username and/or password.')
                 exit(1)
             except ConnectionError as e:
-                if (retries < 10):
+                if (retries < 3):
                     retries += 1
-                    sleep(60)
                 else:
                     raise
 
@@ -249,7 +251,8 @@ class _Save(deque[Status]):
                 deque(
                     streaming_bulk(
                         client=self.es_connection,
-                        actions=self.generate_statuses()
+                        actions=self.generate_statuses(),
+                        request_timeout=30
                     ),
                     maxlen=0
                 )
