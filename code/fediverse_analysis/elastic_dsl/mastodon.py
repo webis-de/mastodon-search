@@ -10,8 +10,8 @@ class Emoji(InnerDoc):
     # Emojis are custom emojis per instance. The URL shows where one can find
     # them. They are used in a status by writing :shortcode: .
     shortcode: str = Keyword()
-    static_url: str = Text()
-    url: str = Text()
+    static_url: str = Keyword()
+    url: str = Keyword()
     visible_in_picker: bool = Boolean()
 
 class Field(InnerDoc):
@@ -23,26 +23,27 @@ class Field(InnerDoc):
 class Account(InnerDoc):
     # acct is handle@instance
     acct: str = Keyword()
-    avatar: str = Text()
-    avatar_static: str = Text()
+    avatar: str = Keyword()
+    avatar_static: str = Keyword()
     bot: bool = Boolean()
     created_at: datetime = Date()
     discoverable: bool = Boolean()
-    display_name: str = Text()
+    display_name: str = Keyword()
     followers_count: int = Integer()
     following_count: int = Integer()
     group: bool = Boolean()
+    # Custom attribute: username@instance
     handle: str = Keyword()
-    header: str = Text()
-    header_static: str = Text()
+    header: str = Keyword()
+    header_static: str = Keyword()
     id: str = Keyword()
     last_status_at: datetime = Date()
     locked: bool = Boolean()
     noindex: bool = Boolean()
     note: str = Text()
     statuses_count: int = Integer()
-    url: str = Text()
-    uri: str = Text()
+    url: str = Keyword()
+    uri: str = Keyword()
     username: str = Keyword()
 
     emojis: list[Emoji] = Nested(Emoji)
@@ -65,25 +66,25 @@ class Account(InnerDoc):
 
 class Application(InnerDoc):
     name: str = Keyword()
-    website: str = Text()
+    website: str = Keyword()
 
 # A teaser of linked content.
 class Card(InnerDoc):
-    author_name: str = Text()
-    author_url: str = Text()
-    blurhash: str = Text()
+    author_name: str = Keyword()
+    author_url: str = Keyword()
+    blurhash: str = Keyword()
     description: str = Text()
-    embed_url: str = Text()
+    embed_url: str = Keyword()
     height: int = Integer()
-    image: str = Text()
+    image: str = Keyword()
     image_description: str = Text()
     language: str = Keyword()
-    provider_name: str = Text()
-    provider_url: str = Text()
+    provider_name: str = Keyword()
+    provider_url: str = Keyword()
     published_at: datetime = Date()
     title: str = Text()
     type: str = Keyword()
-    url: str = Text()
+    url: str = Keyword()
     width: int = Integer()
 
 # Part of MediaAttachment: focal point for thumbnails
@@ -96,33 +97,33 @@ class MetaInfo(InnerDoc):
     aspect: float = Float()
     bitrate: int = Integer()
     duration: float = Float()
-    frame_rate: str = Text()
+    frame_rate: str = Keyword()
     height: int = Integer()
     width: int = Integer()
 
 # Meta information of MediaAttachments.
 class Meta(InnerDoc):
-    audio_bitrate: str = Text()
-    audio_channels: str = Text()
-    audio_encode: str = Text()
+    audio_bitrate: str = Keyword()
+    audio_channels: str = Keyword()
+    audio_encode: str = Keyword()
     focus: Focus() = Object(Focus)
     original: MetaInfo() = Object(MetaInfo)
     small: MetaInfo() = Object(MetaInfo)
 
 class MediaAttachment(InnerDoc):
-    blurhash: str = Text()
+    blurhash: str = Keyword()
     description: str = Text()
     id: str = Keyword()
     meta_: Meta = Object(Meta)
-    preview_url: str = Text()
-    remote_url: str = Text()
+    preview_url: str = Keyword()
+    remote_url: str = Keyword()
     type: str = Keyword()
-    url: str = Text()
+    url: str = Keyword()
 
 class Mention(InnerDoc):
     acct: str = Keyword()
     id: str = Keyword()
-    url: str = Text()
+    url: str = Keyword()
     username: str = Keyword()
 
 # An option of a poll
@@ -147,17 +148,17 @@ class Poll(InnerDoc):
 # Reblog is a reference to another status that was boosted ("retweeted")
 class Reblog(InnerDoc):
     id: str = Keyword()
-    url: str = Text()
+    url: str = Keyword()
 
 class Tag(InnerDoc):
     name: str = Keyword()
-    url: str = Text()
+    url: str = Keyword()
 
 
 class Status(Document):
     account: Account = Object(Account)
     # Custom attribute
-    api_url: str = Text()
+    api_url: str = Keyword()
     # Which application was used to post this status
     application: Application = Object(Application)
     card: Card = Object(Card)
@@ -165,7 +166,7 @@ class Status(Document):
     # Custom attribute
     crawled_at: datetime = Date()
     # Custom attribute
-    crawled_from_api_url = Text()
+    crawled_from_api_url = Keyword()
     # Custom attribute
     crawled_from_instance = Keyword()
     created_at: datetime = Date()
@@ -183,8 +184,8 @@ class Status(Document):
     # On media: Indicates NSFW. / Activates click to show.
     sensitive: bool = Boolean()
     spoiler_text: str = Text()
-    uri: str = Text()
-    url: str = Text()
+    uri: str = Keyword()
+    url: str = Keyword()
     visibility: str = Keyword()
 
     emojis: list[Emoji] = Nested(Emoji)
