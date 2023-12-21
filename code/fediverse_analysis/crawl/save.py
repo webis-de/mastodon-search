@@ -1,7 +1,7 @@
 from collections import deque
 from collections.abc import Iterator
 from datetime import datetime, UTC
-from elasticsearch import AuthenticationException
+from elasticsearch import AuthenticationException, ConnectionError
 from elasticsearch.helpers import streaming_bulk
 from elasticsearch_dsl import connections
 from threading import Thread
@@ -82,14 +82,24 @@ class _Save(deque[Status]):
         except ValueError as e:
             print('URL must include scheme and host, e. g. https://localhost')
             exit(1)
-        try:
-            # exists should be run every time to actually check the connection.
-            if (not Status._index.exists(self.es_connection)):
-                Status.init()
-        except AuthenticationException:
-            print('Elasticsearch authentication failed.'
-                +'Wrong username and/or password.')
-            exit(1)
+        retries = 0
+        while (True):
+            try:
+                # exists should be run every time to actually check the connection.
+                if (not Status._index.exists(self.es_connection)):
+                    Status.init()
+                else:
+                    return
+            except AuthenticationException:
+                print('Elasticsearch authentication failed.'
+                    +'Wrong username and/or password.')
+                exit(1)
+            except ConnectionError as e:
+                if (retries < 10):
+                    retries += 1
+                    sleep(60)
+                else:
+                    raise
 
     def write_status(
         self, status: dict, crawled_from_instance: str, api_method: str

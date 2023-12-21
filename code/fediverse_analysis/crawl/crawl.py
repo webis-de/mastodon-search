@@ -46,7 +46,6 @@ class Crawler:
                 if (retries < self.NUM_RETRIES):
                     retries += 1
                 else:
-                    print('SHIT')
                     raise
             else:
                 retries = 1
