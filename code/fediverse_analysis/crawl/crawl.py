@@ -1,7 +1,10 @@
-import mastodon as mstdn
+from mastodon import Mastodon
+from requests import Session
+from requests_ratelimiter import LimiterAdapter
 from sys import exit, stderr
 from threading import Thread
 from time import sleep
+from urllib3 import Retry
 
 from fediverse_analysis.crawl.save import _Save
 
@@ -19,7 +22,9 @@ class Crawler:
         self.instance = instance
         self.is_running = False
         self.last_seen_created_at = None
-        self.mastodon = mstdn.Mastodon(api_base_url=self.instance)
+        self.mastodon = Mastodon(
+            api_base_url=self.instance, session=self._session()
+        )
         self.max_wait = 3600
         self.save = save
 
@@ -32,25 +37,14 @@ class Crawler:
         Return the id of the latest status.
         """
         wait_time = initial_wait
-        retries = 1
         self.is_running = True
         self.timer = Thread(target=self._print_timer, daemon=True)
         self.timer.start()
         print('Last crawled status created at:', flush=True)
         while True:
             statuses = None
-            try:
-                statuses = self.mastodon.timeline(
-                    timeline='public', limit=40, min_id=min_id)
-            except Exception:
-                if (retries < self.NUM_RETRIES):
-                    retries += 1
-                else:
-                    raise
-            else:
-                retries = 1
-            # Sometimes we get 'Connection reset by peer' and don't have
-            # any new statuses.
+            statuses = self.mastodon.timeline(
+                timeline='public', limit=40, min_id=min_id)
             if (statuses):
                 for status in statuses:
                     self.save.write_status(status, self.instance,
@@ -94,6 +88,32 @@ class Crawler:
         self.save.init_es_connection(host, password, port, username)
         last_seen_id = self.save.get_last_id(self.instance)
         self._crawl_updates(min_id=last_seen_id)
+
+    def _session(self) -> Session:
+        retries = Retry(
+            total=20,
+            connect=10,
+            read=10,
+            redirect=10,
+            status=10,
+            other=10,
+            backoff_factor=1,
+            status_forcelist=[403, 500, 502, 503, 504, 522, 530],
+            respect_retry_after_header=True
+        )
+        adapter = LimiterAdapter(
+            burst=1,
+            max_retries=retries,
+            per_second=1
+        )
+        session = Session()
+        session.headers['User-Agent'] = (
+            'Webis Mastodon crawler '
+            +'(https://webis.de/, webis@listserv.uni-weimar.de)'
+        )
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        return session
 
     def _print_timer(self) -> None:
         sleep(60)

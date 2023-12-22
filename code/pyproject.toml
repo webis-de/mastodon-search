@@ -19,6 +19,7 @@ dependencies = [
 	'elastic-transport~=8.10',
 	'elasticsearch_dsl~=8.11',
 	'Mastodon.py~=1.8',
+	'requests-ratelimiter~=0.4',
 ]
 readme = 'README.md'
 requires-python = '>=3.10'
@@ -34,3 +35,7 @@ data-analysis = [
 	'pandas~=2.1',
 	'scipy~=1.11',
 ]
+
+[tool.setuptools.packages.find]
+include = ['fediverse_analysis']
+namespaces = false
