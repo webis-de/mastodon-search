@@ -48,8 +48,13 @@ class Streamer:
         while True:
             if (not self.is_running):
                 return
-            print(self.last_seen_created_at.isoformat(timespec='seconds'),
-                flush=True)
+            if (self.last_seen_created_at):
+                print(
+                    self.last_seen_created_at.isoformat(timespec='seconds'),
+                    flush=True
+                )
+            else:
+                print('None')
             sleep(600)
 
     def stream_updates_to_es(
@@ -84,8 +89,6 @@ class Streamer:
                 if (str(e) == 'Server ceased communication.'):
                     print(e)
                 else:
-                    if (self.did_stream_work):
-                        print()
                     print(
                         'During streaming an error occured:', e,
                         file=stderr, flush=True

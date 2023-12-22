@@ -120,6 +120,11 @@ class Crawler:
         while True:
             if (not self.is_running):
                 return
-            print(self.last_seen_created_at.isoformat(timespec='seconds'),
-                flush=True)
+            if (self.last_seen_created_at):
+                print(
+                    self.last_seen_created_at.isoformat(timespec='seconds'),
+                    flush=True
+                )
+            else:
+                print('None')
             sleep(600)
