@@ -4,7 +4,7 @@ from datetime import datetime, UTC
 from elasticsearch import AuthenticationException, ConnectionError
 from elasticsearch.helpers import streaming_bulk
 from elasticsearch_dsl import connections
-from threading import Thread
+from threading import Lock, Thread
 from time import sleep
 from uuid import NAMESPACE_URL, uuid5
 
@@ -18,7 +18,7 @@ class _Save(deque[Status]):
     # Save to Elasticsearch after this number of minutes, even if there are
     # less statuses than CHUNK_SIZE. Note that saving only takes place after
     # the next status is received.
-    MAX_MINUTES = 10
+    MAX_MINUTES_TO_FLUSH = 30
     INT_MAX = 2**31 - 1
     INT_MIN = -2**31
     NAMESPACE_FA = uuid5(NAMESPACE_URL, 'fediverse_analysis')
@@ -26,18 +26,12 @@ class _Save(deque[Status]):
 
     def __init__(self) -> None:
         self.es_connection = None
-        self.flush = False
         self.flush_minutes = 0
-        self.timer = Thread(
-            target=self.bulk_timer, daemon=True)
+        self.lock = Lock()
+        self.flush_thread = Thread(
+            target=self.flush, daemon=True)
 
-        self.timer.start()
-
-    def bulk_timer(self) -> None:
-        while True:
-            sleep(60)
-            self.flush = True
-            self.flush_minutes += 1
+        self.flush_thread.start()
 
     def check_int(self, num: int) -> str:
         if (num <= self.INT_MAX and num >= self.INT_MIN):
@@ -47,6 +41,26 @@ class _Save(deque[Status]):
 
     def check_str(self, value: object) -> str:
         return (str(value) if value else None)
+
+    def flush(self) -> None:
+        while True:
+            sleep(60)
+            if (len(self) < self.CHUNK_SIZE
+                    and self.flush_minutes < self.MAX_MINUTES_TO_FLUSH):
+                self.flush_minutes += 1
+                continue
+            self.flush_minutes = 0
+            if (len(self) == 0):
+                continue
+            with self.lock:
+                deque(
+                    streaming_bulk(
+                        client=self.es_connection,
+                        actions=self.generate_statuses(),
+                        request_timeout=300
+                    ),
+                    maxlen=0
+                )
 
     def generate_statuses(self) -> Iterator[Status]:
         while (self):
@@ -244,17 +258,5 @@ class _Save(deque[Status]):
             )
 
         # Save status.
-        self.append(dsl_status.to_dict(include_meta=True))
-        if (self.flush):
-            if (len(self) >= self.CHUNK_SIZE
-                    or self.flush_minutes >= self.MAX_MINUTES):
-                deque(
-                    streaming_bulk(
-                        client=self.es_connection,
-                        actions=self.generate_statuses(),
-                        request_timeout=30
-                    ),
-                    maxlen=0
-                )
-                self.flush_minutes = 0
-            self.flush = False
+        with self.lock:
+            self.append(dsl_status.to_dict(include_meta=True))
