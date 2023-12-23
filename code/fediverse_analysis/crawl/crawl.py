@@ -57,7 +57,7 @@ class Crawler:
                     wait_time *= 0.9
             elif (return_on_up_to_date):
                 self.is_running = False
-                return statuses[0].get('id')
+                return min_id
             # Never go above a set maximum
             elif (wait_time >= self.max_wait):
                 wait_time = self.max_wait
