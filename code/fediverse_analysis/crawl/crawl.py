@@ -41,8 +41,8 @@ class Crawler:
         self.timer = Thread(target=self._print_timer, daemon=True)
         self.timer.start()
         print('Last crawled status created at:', flush=True)
+        statuses = None
         while True:
-            statuses = None
             statuses = self.mastodon.timeline(
                 timeline='public', limit=40, min_id=min_id)
             if (statuses):
@@ -51,26 +51,24 @@ class Crawler:
                         'api/v1/timelines/public')
                 min_id = statuses[0].get('id')
                 self.last_seen_created_at = statuses[0].get('created_at')
-                # Adjust wait time between requests to actual activity
-                if (len(statuses) == 40):
-                    if(wait_time > 1):
-                        wait_time *= 0.9
-                elif (return_on_up_to_date):
-                    self.is_running = False
-                    return statuses[0].get('id')
-                # Never go above a set maximum
-                elif (wait_time >= self.max_wait):
-                    wait_time = self.max_wait
-                # Go up quick on small instances
-                elif (len(statuses) == 0):
-                    wait_time *= 2
-                elif (len(statuses) <= 3):
-                    wait_time *= 1.5
-                elif (len(statuses) <= 10):
-                    wait_time *= 1.1
-                sleep(wait_time)
-            else:
-                sleep(10)
+            # Adjust wait time between requests to actual activity
+            if (len(statuses) == 40):
+                if(wait_time > 1):
+                    wait_time *= 0.9
+            elif (return_on_up_to_date):
+                self.is_running = False
+                return statuses[0].get('id')
+            # Never go above a set maximum
+            elif (wait_time >= self.max_wait):
+                wait_time = self.max_wait
+            # Go up quick on small instances
+            elif (len(statuses) == 0):
+                wait_time *= 2
+            elif (len(statuses) <= 3):
+                wait_time *= 1.5
+            elif (len(statuses) <= 10):
+                wait_time *= 1.1
+            sleep(wait_time)
 
     def crawl_to_es(
         self,
@@ -91,14 +89,14 @@ class Crawler:
 
     def _session(self) -> Session:
         retries = Retry(
-            total=20,
-            connect=10,
-            read=10,
-            redirect=10,
-            status=10,
-            other=10,
+            total=30,
+            connect=15,
+            read=15,
+            redirect=15,
+            status=15,
+            other=15,
             backoff_factor=1,
-            status_forcelist=[403, 500, 502, 503, 504, 522, 530],
+            status_forcelist=[400, 403, 500, 502, 503, 504, 522, 523, 530],
             respect_retry_after_header=True
         )
         adapter = LimiterAdapter(
