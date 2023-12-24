@@ -54,7 +54,7 @@ class Streamer:
                     flush=True
                 )
             else:
-                print('None')
+                print('None', flush=True)
             sleep(600)
 
     def stream_updates_to_es(

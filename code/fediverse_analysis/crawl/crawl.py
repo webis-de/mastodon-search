@@ -124,5 +124,5 @@ class Crawler:
                     flush=True
                 )
             else:
-                print('None')
+                print('None', flush=True)
             sleep(600)
