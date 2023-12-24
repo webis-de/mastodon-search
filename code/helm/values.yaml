@@ -1,4 +1,4 @@
-image: registry.webis.de/code-lib/public-images/thesis-ernst:0.2.4
+image: registry.webis.de/code-lib/public-images/thesis-ernst:0.2.5
 
 backoffLimit: 50
 ttlHoursAfterFinished: 5
