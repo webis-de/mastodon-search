@@ -35,13 +35,16 @@ class Streamer:
     def _intermediate_crawl(self) -> None:
         if (self.last_seen_id):
             print('Fetching missed statuses.', flush=True)
-            self.last_seen_id = self.crawler._crawl_updates(
-                initial_wait=10,
-                min_id=self.last_seen_id,
-                return_on_up_to_date=True
-            )
         else:
-            print('Could not find any previous statuses.', flush=True)
+            print(
+                'Could not find any previous statuses. Crawling some.',
+                flush=True
+            )
+        self.last_seen_id = self.crawler._crawl_updates(
+            initial_wait=10,
+            min_id=self.last_seen_id,
+            return_on_up_to_date=True
+        )
 
     def _print_timer(self) -> None:
         sleep(60)
