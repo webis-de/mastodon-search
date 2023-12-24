@@ -96,7 +96,9 @@ class Crawler:
             status=15,
             other=15,
             backoff_factor=1,
-            status_forcelist=[400, 403, 500, 502, 503, 504, 522, 523, 530],
+            status_forcelist=[
+                400, 403, 404, 500, 502, 503, 504, 522, 523, 530
+            ],
             respect_retry_after_header=True
         )
         adapter = LimiterAdapter(
