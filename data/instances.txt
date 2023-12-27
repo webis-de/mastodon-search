@@ -215,9 +215,7 @@ fed.sbcloud.cc
 federate.social
 federated.press
 federatedfandom.net
-fedi.halcyon-is.land
 fedi.lat
-fedibird.com
 fedinerds.social
 fedisabled.social
 fediscience.org
@@ -556,9 +554,7 @@ md.ilyamikcoder.com
 me.dm
 med-mastodon.com
 medibubble.org
-meerjungfrauengrotte.de
 mementomori.social
-mental.social
 meow.cloud
 meow.social
 merovingian.club
@@ -670,7 +666,6 @@ parfait.day
 pawb.fun
 pdx.sh
 pebble.social
-penguicon.social
 peoplemaking.games
 persiansmastodon.com
 pgh.social
@@ -900,7 +895,6 @@ toot.lugbz.social
 toot.lv
 toot.portes-imaginaire.org
 toot.re
-toot.rebel.ar
 toot.wales
 toot.works
 tooter.social
@@ -998,3 +992,9 @@ zirk.us
 zone.liolok.com
 zpravobot.news
 zug.network
+mastodon.nycmesh.net
+nicaloro.com
+blogi.social
+mastodon.cesko.digital
+exito.social
+terra.social
