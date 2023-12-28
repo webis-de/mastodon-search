@@ -89,13 +89,14 @@ class Crawler:
 
     def _session(self) -> Session:
         retries = Retry(
-            total=30,
-            connect=15,
-            read=15,
-            redirect=15,
-            status=15,
-            other=15,
+            total=28,
+            connect=14,
+            read=14,
+            redirect=14,
+            status=14,
+            other=14,
             backoff_factor=1,
+            backoff_max=2**15,
             status_forcelist=[
                 400, 403, 404, 500, 502, 503, 504, 522, 523, 530
             ],
