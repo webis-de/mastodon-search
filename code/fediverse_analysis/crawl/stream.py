@@ -33,6 +33,7 @@ class Streamer:
         self.crawler = Crawler(self.instance, self.save)
 
     def _intermediate_crawl(self) -> None:
+        self.is_running = False
         if (self.last_seen_id):
             print('Fetching missed statuses.', flush=True)
         else:
@@ -45,6 +46,10 @@ class Streamer:
             min_id=self.last_seen_id,
             return_on_up_to_date=True
         )
+        self.is_running = True
+        if not self.timer.is_alive():
+            self.timer = Thread(target=self._print_timer, daemon=True)
+            self.timer.start()
 
     def _print_timer(self) -> None:
         sleep(60)
@@ -75,12 +80,11 @@ class Streamer:
         stream_listener = _UpdateStreamListener(self.instance, self.save, self)
         self.last_seen_id = self.save.get_last_id(self.instance)
         self._intermediate_crawl()
-        self.timer.start()
         while True:
+            self.did_stream_work = False
+            print('Streaming statuses. Last streamed status created at:',
+                flush=True)
             try:
-                self.did_stream_work = False
-                print('Streaming statuses. Last streamed status created at:',
-                    flush=True)
                 self.mastodon.stream_public(stream_listener)
             except MastodonVersionError:
                 print(f'{self.instance} does not support streaming '
