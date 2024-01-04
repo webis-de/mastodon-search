@@ -98,7 +98,9 @@ class Crawler:
             backoff_factor=1,
             backoff_max=2**15,
             status_forcelist=[
-                400, 403, 404, 500, 502, 503, 504, 522, 523, 530
+                400, 403, 404,
+                500, 502, 503, 504,
+                520, 521, 522, 523, 524, 525, 526, 527, 530
             ],
             respect_retry_after_header=True
         )
