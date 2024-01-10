@@ -68,53 +68,25 @@ class _Save(deque[Status]):
 
     def get_last_id(self, instance: str) -> str | None:
         """Return latest id of all statuses that were crawled from a given
-        instance, or None if there is no status yet.
+        instance, or None if there is no status yet. Use wildcard to search
+        every month's index and also a possible global index.
         """
-        # Search index of current month and, if there's no status,
-        # past months (in steps of 4 weeks), but not more than:
-        past_months = 2
-        i = past_months
-        while (True):
-            index = Index(
-                (datetime.now() + timedelta(days=(past_months-i) * 28))\
-                    .strftime(f'{INDEX_PREFIX}_%Y_%m')
-            )
-            try:
-                status = index.search()\
-                        .filter('term', crawled_from_instance=instance)\
-                        .sort('-crawled_at')\
-                        .source(['id'])\
-                        .params(size=1)\
-                        .execute()\
-                        .hits
-            except NotFoundError:
-                # This code is only needed in the transition phase from a
-                # single index to one index per month.
-                # The next `###` marks the end of this code block.
-                index = Index(INDEX_PREFIX)
-                try:
-                    status = index.search()\
-                            .filter('term', crawled_from_instance=instance)\
-                            .sort('-crawled_at')\
-                            .source(['id'])\
-                            .params(size=1)\
-                            .execute()\
-                            .hits
-                except NotFoundError:
-                    return None
-                else:
-                    return status[0]['id']
-                ###
-                # This will be reachable once the transitioning code is gone.
-                return None
-            if (status):
-                return status[0]['id']
-            else:
-                if (i <= 0):
-                    return None
-                else:
-                    i += 1
-                    continue
+        # Search all indices via wildcard
+        try:
+            status = Index(f'{INDEX_PREFIX}*')\
+                    .search()\
+                    .filter('term', crawled_from_instance=instance)\
+                    .sort('-crawled_at')\
+                    .source(['id'])\
+                    .params(size=1)\
+                    .execute()\
+                    .hits
+        except NotFoundError:
+            return None
+        if (status):
+            return status[0]['id']
+        else:
+            return None
 
     def init_elastic_connection(
         self,
