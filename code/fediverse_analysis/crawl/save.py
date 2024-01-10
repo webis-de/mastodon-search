@@ -1,14 +1,16 @@
 from collections import deque
 from collections.abc import Iterator
-from datetime import datetime, UTC
-from elasticsearch import AuthenticationException, ConnectionError
+from datetime import datetime, timedelta, UTC
+from elasticsearch import (
+    AuthenticationException, ConnectionError, NotFoundError
+)
 from elasticsearch.helpers import streaming_bulk
-from elasticsearch_dsl import connections
+from elasticsearch_dsl import connections, Index
 from threading import Lock, Thread
 from time import sleep
 from uuid import NAMESPACE_URL, uuid5
 
-from fediverse_analysis.elastic_dsl.mastodon import Status
+from fediverse_analysis.elastic_dsl.mastodon import INDEX_PREFIX, Status
 
 
 class _Save(deque[Status]):
@@ -25,13 +27,11 @@ class _Save(deque[Status]):
     NAMESPACE_MASTODON = uuid5(NAMESPACE_FA, 'Mastodon')
 
     def __init__(self) -> None:
-        self.es_connection = None
+        self.elastic = None
         self.flush_minutes = 0
         self.lock = Lock()
         self.flush_thread = Thread(
             target=self.flush, daemon=True)
-
-        self.flush_thread.start()
 
     def check_int(self, num: int) -> str:
         if (num <= self.INT_MAX and num >= self.INT_MIN):
@@ -55,7 +55,7 @@ class _Save(deque[Status]):
             with self.lock:
                 deque(
                     streaming_bulk(
-                        client=self.es_connection,
+                        client=self.elastic,
                         actions=self.generate_statuses(),
                         request_timeout=300
                     ),
@@ -70,45 +70,71 @@ class _Save(deque[Status]):
         """Return latest id of all statuses that were crawled from a given
         instance, or None if there is no status yet.
         """
-        status = Status.search()\
-                .filter('term', crawled_from_instance=instance)\
-                .sort('-crawled_at')\
-                .source(['id'])\
-                .params(size=1)\
-                .execute()\
-                .hits
-        if (status):
-            return status[0]['id']
-        else:
-            return None
+        # Search index of current month and, if there's no status,
+        # past months (in steps of 4 weeks), but not more than:
+        past_months = 2
+        i = past_months
+        while (True):
+            index = Index(
+                (datetime.now() + timedelta(days=(past_months-i) * 28))\
+                    .strftime(f'{INDEX_PREFIX}_%Y_%m')
+            )
+            try:
+                status = index.search()\
+                        .filter('term', crawled_from_instance=instance)\
+                        .sort('-crawled_at')\
+                        .source(['id'])\
+                        .params(size=1)\
+                        .execute()\
+                        .hits
+            except NotFoundError:
+                # This code is only needed in the transition phase from a
+                # single index to one index per month.
+                # The next `###` marks the end of this code block.
+                index = Index(INDEX_PREFIX)
+                try:
+                    status = index.search()\
+                            .filter('term', crawled_from_instance=instance)\
+                            .sort('-crawled_at')\
+                            .source(['id'])\
+                            .params(size=1)\
+                            .execute()\
+                            .hits
+                except NotFoundError:
+                    return None
+                else:
+                    return status[0]['id']
+                ###
+                # This will be reachable once the transitioning code is gone.
+                return None
+            if (status):
+                return status[0]['id']
+            else:
+                if (i <= 0):
+                    return None
+                else:
+                    i += 1
+                    continue
 
-    def init_es_connection(
+    def init_elastic_connection(
         self,
         host: str,
         password: str = '',
         port: int = 9200,
         username: str = ''
     ) -> None:
-        es_host = host + ':' + str(port)
-        try:
-            self.es_connection = connections.create_connection(
-                hosts=es_host,
-                basic_auth=(username, password),
-                timeout=60
-            )
-        except ValueError as e:
-            print('URL must include scheme and host, e. g. https://localhost')
-            exit(1)
+        self.set_elastic(host, password, port, username)
+
         retries = 0
+        index = Index(datetime.now().strftime(f'{INDEX_PREFIX}_%Y_%m'))
         while (True):
             try:
-                # exists should be run every time to actually check the connection.
-                if (not Status._index.exists(self.es_connection)):
-                    Status.init()
-                else:
-                    return
+                # exists should be run every time to actually check the
+                # connection and credentials.
+                if (not index.exists(self.elastic)):
+                    index.create()
             except AuthenticationException:
-                print('Elasticsearch authentication failed.'
+                print('Elasticsearch authentication failed. '
                     +'Wrong username and/or password.')
                 exit(1)
             except ConnectionError as e:
@@ -116,6 +142,53 @@ class _Save(deque[Status]):
                     retries += 1
                 else:
                     raise
+            except NotFoundError:
+                self.flush_thread.start()
+                return
+            else:
+                self.flush_thread.start()
+                return
+
+    def set_elastic(self, host, password, port, username) -> None:
+        elastic_host = host + ':' + str(port)
+        try:
+            self.elastic = connections.create_connection(
+                hosts=elastic_host,
+                basic_auth=(username, password),
+                timeout=60
+            )
+        except ValueError as e:
+            print('URL must include scheme and host, e. g. https://localhost')
+            exit(1)
+
+    def set_elastic_index_templates(
+        self, host, password, port, username
+    ) -> None:
+        """Create Elasticsearch index template for this crawler. Should be run
+        once before crawling.
+        """
+        self.set_elastic(host, password, port, username)
+
+        # Don't simply use elasticsearch_dsl, because it uses deprecated
+        # legacy templates. See:
+        # https://github.com/elastic/elasticsearch-dsl-py/issues/1576
+        template = Status._index.as_template(
+            f'{INDEX_PREFIX}',
+            pattern=f'{INDEX_PREFIX}_*'
+        )
+        template_body = template.to_dict()
+        index_pattern = template_body.pop('index_patterns')
+        order = template_body.pop('order', None)
+        d = {
+            'template': template_body,
+            'index_patterns': index_pattern,
+            'composed_of': []
+        }
+        if (order is not None):
+            d['priority'] = order
+        self.elastic.indices.put_index_template(
+            name=template._template_name, body=d
+        )
 
     def write_status(
         self, status: dict, crawled_from_instance: str, api_method: str
@@ -137,12 +210,16 @@ class _Save(deque[Status]):
         else:
             instance = acc.get('acct').split('@', maxsplit=1)[1]
             is_local = False
+        time = datetime.now(tz=UTC)
         dsl_status = Status(
-            meta={'id': status_uuid},
+            meta={
+                'id': status_uuid,
+                'index': time.strftime(f'{INDEX_PREFIX}_%Y_%m')
+            },
             api_url=('https://' + crawled_from_instance
                        + '/api/v1/statuses/' + str(status.get('id'))),
             content=status.get('content'),
-            crawled_at=datetime.now(tz=UTC),
+            crawled_at=time,
             crawled_from_api_url=(
                 'https://' + crawled_from_instance + '/' + api_method),
             crawled_from_instance=crawled_from_instance,

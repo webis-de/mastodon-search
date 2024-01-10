@@ -6,6 +6,8 @@ from elasticsearch_dsl import (
     Integer, Keyword, Nested, Object, Text
 )
 
+INDEX_PREFIX = 'corpus_mastodon_statuses'
+
 class Emoji(InnerDoc):
     # Emojis are custom emojis per instance. The URL shows where one can find
     # them. They are used in a status by writing :shortcode: .
@@ -194,10 +196,10 @@ class Status(Document):
     tags: list[str] = Nested(Tag)
 
     class Index:
-        name = 'corpus_mastodon_statuses'
+        name = INDEX_PREFIX
         settings = {
             'number_of_replicas': 2,
-            'number_of_shards': 10
+            'number_of_shards': 20
         }
 
     def add_emoji(

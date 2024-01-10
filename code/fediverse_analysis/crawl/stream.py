@@ -65,7 +65,7 @@ class Streamer:
                 print('None', flush=True)
             sleep(600)
 
-    def stream_updates_to_es(
+    def stream_updates_to_elastic(
         self,
         host: str,
         password: str = '',
@@ -76,7 +76,7 @@ class Streamer:
         new public statuses. Write the statuses to Elasticsearch.
         Use crawling of the API via GET requests as a fallback.
         """
-        self.save.init_es_connection(host, password, port, username)
+        self.save.init_elastic_connection(host, password, port, username)
         stream_listener = _UpdateStreamListener(self.instance, self.save, self)
         self.last_seen_id = self.save.get_last_id(self.instance)
         self._intermediate_crawl()
