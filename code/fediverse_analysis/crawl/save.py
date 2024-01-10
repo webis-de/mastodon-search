@@ -2,7 +2,8 @@ from collections import deque
 from collections.abc import Iterator
 from datetime import datetime, timedelta, UTC
 from elasticsearch import (
-    AuthenticationException, ConnectionError, NotFoundError
+    AuthenticationException, AuthorizationException,
+    ConnectionError, NotFoundError
 )
 from elasticsearch.helpers import streaming_bulk
 from elasticsearch_dsl import connections, Index
@@ -71,7 +72,6 @@ class _Save(deque[Status]):
         instance, or None if there is no status yet. Use wildcard to search
         every month's index and also a possible global index.
         """
-        # Search all indices via wildcard
         try:
             status = Index(f'{INDEX_PREFIX}*')\
                     .search()\
@@ -103,8 +103,8 @@ class _Save(deque[Status]):
             try:
                 # exists should be run every time to actually check the
                 # connection and credentials.
-                if (not index.exists(self.elastic)):
-                    index.create()
+                if (index.exists()):
+                    pass
             except AuthenticationException:
                 print('Elasticsearch authentication failed. '
                     +'Wrong username and/or password.')
@@ -141,6 +141,7 @@ class _Save(deque[Status]):
         """
         self.set_elastic(host, password, port, username)
 
+        print('Creating index template… ', end='')
         # Don't simply use elasticsearch_dsl, because it uses deprecated
         # legacy templates. See:
         # https://github.com/elastic/elasticsearch-dsl-py/issues/1576
@@ -158,9 +159,30 @@ class _Save(deque[Status]):
         }
         if (order is not None):
             d['priority'] = order
-        self.elastic.indices.put_index_template(
-            name=template._template_name, body=d
-        )
+        try:
+            self.elastic.indices.put_index_template(
+                name=template._template_name, body=d
+            )
+        except AuthorizationException:
+            print('ERROR: You are not authorized.')
+        else:
+            print('ok')
+        print('Creating indices…')
+        for i in range(2):
+            name = (datetime.now() + timedelta(days=i*28))\
+                    .strftime(f'{INDEX_PREFIX}_%Y_%m')
+            index = Index(name)
+            settings = {
+                'number_of_replicas': 2,
+                'number_of_shards': 20
+            }
+            print(name, ': ', sep='', end='')
+            if (not index.exists()):
+                index.create(settings=settings)
+                print('ok')
+            else:
+                print('already exists')
+
 
     def write_status(
         self, status: dict, crawled_from_instance: str, api_method: str

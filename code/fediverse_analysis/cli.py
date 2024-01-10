@@ -39,8 +39,10 @@ def choose_instances(input_file, out_file_full, out_file_pure):
 
 @main.command(
     help='Connect to an Elasticsearch (ES) instance and create the index '
-        +'template necessary for this crawler. Run once before crawling.',
-    short_help='Create Elasticsearch index template.'
+        +'template for this crawler plus the indices needed for crawling for '
+        +'the next 4 weeks. Run once before crawling and if you need another '
+        +'index for an upcoming month.',
+    short_help='Create Elastic index template and indices.'
 )
 @click.option('-H', '--host', required=True,
     help='ES host, e. g.: https://example.com')
@@ -50,7 +52,7 @@ def choose_instances(input_file, out_file_full, out_file_pure):
     help='Port on which ES listens. Default: 9200')
 @click.option('-u', '--username', default='',
     help='Username for ES authentication')
-def es_setup(host, password, port, username):
+def setup_es(host, password, port, username):
     from fediverse_analysis.crawl import save
     save = save._Save()
     save.set_elastic_index_templates(host, password, port, username)
