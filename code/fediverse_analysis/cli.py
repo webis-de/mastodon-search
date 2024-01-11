@@ -38,26 +38,6 @@ def choose_instances(input_file, out_file_full, out_file_pure):
     an.choose(out_file_full, out_file_pure)
 
 @main.command(
-    help='Connect to an Elasticsearch (ES) instance and create the index '
-        +'template for this crawler plus the indices needed for crawling for '
-        +'the next 4 weeks. Run once before crawling and if you need another '
-        +'index for an upcoming month.',
-    short_help='Create Elastic index template and indices.'
-)
-@click.option('-H', '--host', required=True,
-    help='ES host, e. g.: https://example.com')
-@click.option('-P', '--password', default='',
-    help='ES password to your username')
-@click.option('-p', '--port', default=9200,
-    help='Port on which ES listens. Default: 9200')
-@click.option('-u', '--username', default='',
-    help='Username for ES authentication')
-def setup_es(host, password, port, username):
-    from fediverse_analysis.crawl import save
-    save = save._Save()
-    save.set_elastic_index_templates(host, password, port, username)
-
-@main.command(
     help='Read an instance list from NODES_FILE, query all instances for '
         +'`nodeinfo` and `instance/activity` and save the data to OUT_FILE. '
         +'NODES_FILE should be a single JSON array, for example this file: '

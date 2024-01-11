@@ -6,8 +6,6 @@ from elasticsearch_dsl import (
     Integer, Keyword, Nested, Object, Text
 )
 
-INDEX_PREFIX = 'corpus_mastodon_statuses'
-
 class Emoji(InnerDoc):
     # Emojis are custom emojis per instance. The URL shows where one can find
     # them. They are used in a status by writing :shortcode: .
@@ -158,6 +156,9 @@ class Tag(InnerDoc):
 
 
 class Status(Document):
+    """Mastodon status main class. Index and index settings are managed by
+    Elasticsearch index templates and by the method that saves the statuses.
+    """
     account: Account = Object(Account)
     # Custom attribute
     api_url: str = Keyword()
@@ -195,13 +196,6 @@ class Status(Document):
     mentions: list[Mention] = Nested(Mention)
     tags: list[str] = Nested(Tag)
 
-    class Index:
-        name = INDEX_PREFIX
-        settings = {
-            'number_of_replicas': 2,
-            'number_of_shards': 20
-        }
-
     def add_emoji(
         self, shortcode, url, static_url, visible_in_picker
     ) -> None:
@@ -221,10 +215,10 @@ class Status(Document):
         and 'width' as integers.
         """
         if (raw_meta):
-            if (focus := raw_meta.get('focus')):
+            if (raw_focus := raw_meta.get('focus')):
                 focus = Focus(
-                    x=focus.get('x'),
-                    y=focus.get('y')
+                    x=raw_focus.get('x'),
+                    y=raw_focus.get('y')
                 )
             else:
                 focus = None

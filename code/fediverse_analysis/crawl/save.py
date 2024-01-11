@@ -11,7 +11,7 @@ from threading import Lock, Thread
 from time import sleep
 from uuid import NAMESPACE_URL, uuid5
 
-from fediverse_analysis.elastic_dsl.mastodon import INDEX_PREFIX, Status
+from fediverse_analysis.elastic_dsl.mastodon import Status
 
 
 class _Save(deque[Status]):
@@ -22,6 +22,7 @@ class _Save(deque[Status]):
     # less statuses than CHUNK_SIZE. Note that saving only takes place after
     # the next status is received.
     MAX_MINUTES_TO_FLUSH = 30
+    INDEX_PREFIX = 'corpus_mastodon_statuses'
     INT_MAX = 2**31 - 1
     INT_MIN = -2**31
     NAMESPACE_FA = uuid5(NAMESPACE_URL, 'fediverse_analysis')
@@ -73,7 +74,7 @@ class _Save(deque[Status]):
         every month's index and also a possible global index.
         """
         try:
-            status = Index(f'{INDEX_PREFIX}*')\
+            status = Index(f'{self.INDEX_PREFIX}*')\
                     .search()\
                     .filter('term', crawled_from_instance=instance)\
                     .sort('-crawled_at')\
@@ -98,7 +99,7 @@ class _Save(deque[Status]):
         self.set_elastic(host, password, port, username)
 
         retries = 0
-        index = Index(datetime.now().strftime(f'{INDEX_PREFIX}_%Y_%m'))
+        index = Index(datetime.now().strftime(f'{self.INDEX_PREFIX}_%Y_%m'))
         while (True):
             try:
                 # exists should be run every time to actually check the
@@ -133,57 +134,6 @@ class _Save(deque[Status]):
             print('URL must include scheme and host, e. g. https://localhost')
             exit(1)
 
-    def set_elastic_index_templates(
-        self, host, password, port, username
-    ) -> None:
-        """Create Elasticsearch index template for this crawler. Should be run
-        once before crawling.
-        """
-        self.set_elastic(host, password, port, username)
-
-        print('Creating index template… ', end='')
-        # Don't simply use elasticsearch_dsl, because it uses deprecated
-        # legacy templates. See:
-        # https://github.com/elastic/elasticsearch-dsl-py/issues/1576
-        template = Status._index.as_template(
-            f'{INDEX_PREFIX}',
-            pattern=f'{INDEX_PREFIX}_*'
-        )
-        template_body = template.to_dict()
-        index_pattern = template_body.pop('index_patterns')
-        order = template_body.pop('order', None)
-        d = {
-            'template': template_body,
-            'index_patterns': index_pattern,
-            'composed_of': []
-        }
-        if (order is not None):
-            d['priority'] = order
-        try:
-            self.elastic.indices.put_index_template(
-                name=template._template_name, body=d
-            )
-        except AuthorizationException:
-            print('ERROR: You are not authorized.')
-        else:
-            print('ok')
-        print('Creating indices…')
-        for i in range(2):
-            name = (datetime.now() + timedelta(days=i*28))\
-                    .strftime(f'{INDEX_PREFIX}_%Y_%m')
-            index = Index(name)
-            settings = {
-                'number_of_replicas': 2,
-                'number_of_shards': 20
-            }
-            print(name, ': ', sep='', end='')
-            if (not index.exists()):
-                index.create(settings=settings)
-                print('ok')
-            else:
-                print('already exists')
-
-
     def write_status(
         self, status: dict, crawled_from_instance: str, api_method: str
     ) -> None:
@@ -208,7 +158,7 @@ class _Save(deque[Status]):
         dsl_status = Status(
             meta={
                 'id': status_uuid,
-                'index': time.strftime(f'{INDEX_PREFIX}_%Y_%m')
+                'index': time.strftime(f'{self.INDEX_PREFIX}_%Y_%m')
             },
             api_url=('https://' + crawled_from_instance
                        + '/api/v1/statuses/' + str(status.get('id'))),
