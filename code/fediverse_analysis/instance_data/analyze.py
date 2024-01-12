@@ -62,7 +62,8 @@ class Analyzer:
             )
 
         print(f'Number of instances in input file: {len_raw_data}')
-        print(f'Removed for (partially) no data: {len_raw_data-len(self.df)}')
+        print('Removed for (partially) no data – mostly non-Mastodon '
+            +f'instances: {len_raw_data-len(self.df)}')
 
         dupe_len_pre = len(self.df)
         self.df.index = self.df.index.str.strip('.')
@@ -105,12 +106,12 @@ class Analyzer:
 
     def delete_invalid(self) -> None:
         print('––––––––––––––––––––––––––––––––')
-        # "localPosts": 97009982
-        self.df.drop('mastodon.adtension.com')
-        # "localPosts": -1243
-        self.df.drop('linuxjobs.social')
-        self.n_invalid += 2
-        print(f'Removed for invalid data: {self.n_invalid}\n')
+        len_pre = len(self.df)
+        # Fake data will distort calculation:
+        # 97 B (!) followers, 97 M posts on a 2-user instance
+        self.df.drop('mastodon.adtension.com', inplace=True)
+        self.df = self.df[~(self.df['total_statuses'] < 0)]
+        print(f'Removed for invalid data: {len_pre - len(self.df)}\n')
 
     def choose(self, out_file_full: TextIO, out_file_pure: TextIO) -> None:
         SAMPLE_SIZE = 1000
