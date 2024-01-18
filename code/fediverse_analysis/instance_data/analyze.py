@@ -26,8 +26,7 @@ class Analyzer:
         for line in file:
             len_raw_data += 1
             line_dic = loads(line)
-            if not (line_dic['nodeinfo']
-                    and line_dic['activity']):
+            if not (line_dic['nodeinfo'] and line_dic['activity']):
                 continue
             it = iter(line_dic['activity'])
             # The latest week is in progress and not complete.
@@ -62,8 +61,9 @@ class Analyzer:
             )
 
         print(f'Number of instances in input file: {len_raw_data}')
-        print('Removed for (partially) no data – mostly non-Mastodon '
-            +f'instances: {len_raw_data-len(self.df)}')
+        print(f'Removed for (partially) no data: {len_raw_data-len(self.df)}')
+        print('↳ Almost all of these instances run Fediverse software other '
+            +'than Mastodon, some run Mastodon with a non-public API.')
 
         dupe_len_pre = len(self.df)
         self.df.index = self.df.index.str.strip('.')
@@ -111,7 +111,7 @@ class Analyzer:
         # 97 B (!) followers, 97 M posts on a 2-user instance
         self.df.drop('mastodon.adtension.com', inplace=True)
         self.df = self.df[~(self.df['total_statuses'] < 0)]
-        print(f'Removed for invalid data: {len_pre - len(self.df)}\n')
+        print(f'Removed for invalid data (faked/negative values): {len_pre - len(self.df)}\n')
 
     def choose(self, out_file_full: TextIO, out_file_pure: TextIO) -> None:
         SAMPLE_SIZE = 1000
