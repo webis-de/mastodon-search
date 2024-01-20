@@ -79,8 +79,8 @@ blackrock.city
 blackrocks.social
 blacktwitter.io
 blimps.xyz
-blips2.club
 blockriot.com
+blogi.social
 blorbo.social
 blue-sky.world
 blueadair.net
@@ -194,7 +194,6 @@ energiewende.social
 enshittification.social
 epicure.social
 epistolary.org
-epsilon.social
 equestria.social
 esglife.social
 esoteric.party
@@ -202,6 +201,7 @@ esperanto.masto.host
 esq.social
 est.social
 eupolicy.social
+exito.social
 expressional.social
 f-ckendehoelle.de
 f.cz
@@ -215,6 +215,7 @@ fed.sbcloud.cc
 federate.social
 federated.press
 federatedfandom.net
+fedi.halcyon-is.land
 fedi.lat
 fedinerds.social
 fedisabled.social
@@ -458,6 +459,7 @@ mastodon.bsd.cafe
 mastodon.bv.linksjugend-solid.de
 mastodon.cat
 mastodon.catgirl.cloud
+mastodon.cesko.digital
 mastodon.cipherbliss.com
 mastodon.cisti.org
 mastodon.cl
@@ -504,6 +506,7 @@ mastodon.mnetwork.co.kr
 mastodon.motcha.tech
 mastodon.nl
 mastodon.nu
+mastodon.nycmesh.net
 mastodon.nz
 mastodon.nzoss.nz
 mastodon.oeru.org
@@ -554,6 +557,7 @@ md.ilyamikcoder.com
 me.dm
 med-mastodon.com
 medibubble.org
+meerjungfrauengrotte.de
 mementomori.social
 meow.cloud
 meow.social
@@ -622,6 +626,7 @@ neurodifferent.me
 nfb.social
 nfdi.social
 nfld.me
+nicaloro.com
 nicuverse.org
 niedersachsen.social
 nightcord.de
@@ -825,6 +830,7 @@ social.vivaldi.net
 social.y-gallery.net
 socialclub.nyc
 sociale.network
+solarcene.community
 solarpunk.moe
 solidcharity.net
 songbird.cloud
@@ -867,6 +873,7 @@ technews.social
 technodon.org
 techpolicy.social
 techtoots.com
+terra.social
 theatl.social
 theblower.au
 thecentralfinitecurve.com
@@ -986,15 +993,8 @@ yapstreams.com
 yeen.exposed
 zenzone.social
 zetaspace.org
-zh.pp.social
 zhub.link
 zirk.us
 zone.liolok.com
 zpravobot.news
 zug.network
-mastodon.nycmesh.net
-nicaloro.com
-blogi.social
-mastodon.cesko.digital
-exito.social
-terra.social
