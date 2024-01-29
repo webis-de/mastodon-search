@@ -462,7 +462,6 @@ mastodon.catgirl.cloud
 mastodon.cesko.digital
 mastodon.cipherbliss.com
 mastodon.cisti.org
-mastodon.cl
 mastodon.cloudsecurityofficehours.com
 mastodon.coffee
 mastodon.com.br
@@ -993,6 +992,7 @@ yapstreams.com
 yeen.exposed
 zenzone.social
 zetaspace.org
+zh.pp.social
 zhub.link
 zirk.us
 zone.liolok.com
