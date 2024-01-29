@@ -21,7 +21,7 @@ class Field(InnerDoc):
     verified_at: datetime = Date()
 
 class Account(InnerDoc):
-    # acct is handle@instance
+    # username@instance for remote accounts and username for local acconuts
     acct: str = Keyword()
     avatar: str = Keyword()
     avatar_static: str = Keyword()
