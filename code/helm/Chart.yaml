@@ -1,4 +1,4 @@
 apiVersion: v2
 name: mastodon-crawler
 type: application
-version: 0.3.1
+version: 0.3.2
