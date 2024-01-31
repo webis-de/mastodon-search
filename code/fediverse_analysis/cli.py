@@ -38,33 +38,24 @@ def choose_instances(input_file, output_file_full, output_file_pure):
     an.choose(output_file_full, output_file_pure)
 
 @main.command(
-    help='Read an instance list from NODES_FILE, query all instances for '
-        +'`nodeinfo` and `instance/activity` and save the data to OUT_FILE. '
-        +'NODES_FILE should be a single JSON array, for example this file: '
+    help='Read an instance list from INPUT_FILE, query all instances for '
+        +'`nodeinfo` and `activity` and save the data to OUTPUT_FILE. '
+        +'INPUT_FILE should be a single JSON array, for example this file: '
         +'https://nodes.fediverse.party/nodes.json . Data is appended to '
-        +'OUT_FILE. The bottom-most instance is read, this program will '
-        +'resume from there.',
+        +'OUTPUT_FILE; the bottom-most instance is read, this program will '
+        +'resume from there.'
+        +'\n\nAlternatively, use the output of this command as input and do '
+        +'multiple runs which will notably increase the amount of instances '
+        +'with data present.',
     short_help='Obtain data from fediverse instances.',
-)
-@click.argument('nodes_file', type=click.File('r'), required=True)
-@click.argument('output_file', type=click.Path(
-    dir_okay=False, writable=True), required=True)
-def obtain_instance_data(nodes_file, output_file):
-    from fediverse_analysis.instance_data import obtain
-    obtain.get_instances_data(nodes_file, output_file)
-
-@main.command(
-    help='Take the output file of obtain-instance-data as INPUT_FILE and '
-        +'try to fill the gaps, i. e. re-query all instances with incomplete '
-        +'data. This increases the amount of instances with data noticeably.',
-    short_help='Re-run "obtain data" to fill in gaps.',
 )
 @click.argument('input_file', type=click.File('r'), required=True)
 @click.argument('output_file', type=click.Path(
     dir_okay=False, writable=True), required=True)
-def obtain_instance_data_rerun(input_file, output_file):
+def obtain_instance_data(input_file, output_file):
     from fediverse_analysis.instance_data import obtain
-    obtain.get_instances_data_rerun(input_file, output_file)
+    obtainer = obtain.Obtainer(input_file, output_file)
+    obtainer.get_instances_data()
 
 @main.command(
     help='Connect to the streaming API of INSTANCE (e. g.: mastodon.cloud) '

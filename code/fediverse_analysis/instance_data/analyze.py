@@ -60,9 +60,9 @@ class Analyzer:
                 }
             )
 
-        print(f'Number of instances in input file: {len_raw_data}')
+        print(f'Number of fediverse instances in input file: {len_raw_data}')
         print(f'Removed for (partially) no data: {len_raw_data-len(self.df)}')
-        print('↳ Almost all of these instances run Fediverse software other '
+        print('↳ Almost all of these instances run fediverse software other '
             +'than Mastodon, some run Mastodon with a non-public API.')
 
         dupe_len_pre = len(self.df)
