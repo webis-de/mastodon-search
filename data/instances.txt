@@ -216,7 +216,6 @@ federate.social
 federated.press
 federatedfandom.net
 fedi.halcyon-is.land
-fedi.lat
 fedinerds.social
 fedisabled.social
 fediscience.org
@@ -962,6 +961,7 @@ wandering.shop
 wank.social
 wargamers.social
 warhammer.social
+weatherby2378.social
 webperf.social
 webxr.social
 wehavecookies.social
