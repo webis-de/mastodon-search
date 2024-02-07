@@ -27,6 +27,7 @@ class Crawler:
         )
         self.max_wait = 3600
         self.save = save
+        self.timer = Thread(target=self._print_timer, daemon=True)
 
     def _crawl_updates(
         self, initial_wait: int = 60, min_id: str = None,
@@ -38,8 +39,9 @@ class Crawler:
         """
         wait_time = initial_wait
         self.is_running = True
-        self.timer = Thread(target=self._print_timer, daemon=True)
-        self.timer.start()
+        if (not self.timer.is_alive()):
+            self.timer = Thread(target=self._print_timer, daemon=True)
+            self.timer.start()
         print('Last crawled status created at:', flush=True)
         statuses = None
         while True:
