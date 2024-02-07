@@ -270,10 +270,13 @@ class Status(Document):
         self.tags.append(Tag(name=name, url=url))
 
     def set_account(
-        self, acct, avatar, avatar_static, bot, created_at, discoverable,
-        display_name, emojis, fields, followers_count, following_count, group,
-        handle, header, header_static, id, last_status_at, locked, noindex,
-        note, statuses_count, uri, url, username
+        self, acct = None, avatar = None, avatar_static = None, bot = None,
+        created_at = None, discoverable = None, display_name = None,
+        emojis = [], fields = [], followers_count = None,
+        following_count = None, group = None, handle = None, header = None,
+        header_static = None, id = None, last_status_at = None, locked = None,
+        noindex = None, note = None, statuses_count = None, uri = None,
+        url = None, username = None
     ) -> None:
         self.account = Account(
             acct=acct,
