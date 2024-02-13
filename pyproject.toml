@@ -1,0 +1,105 @@
+[project]
+name = "search-on-mastodon"
+authors = [
+    { name = "Matti Wiegmann", email = "matti.wiegmann@uni-weimar.de" },
+    { name = "Jan Heinrich Reimer", email = "heinrich.reimer@uni-jena.de" },
+    { name = "Maximilian Ernst" },
+    { name = "Matthias Hagen", email = "matthias.hagen@uni-jena.de" },
+    { name = "Benno Stein", email = "benno.stein@uni-weimar.de" },
+    { name = "Martin Potthast", email = "martin.potthast@uni-leipzig.de" },
+]
+# description = "TODO"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+	"Programming Language :: Python :: 3 :: Only",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+	"Intended Audience :: Science/Research",
+	"Operating System :: OS Independent",
+	"Topic :: Scientific/Engineering",
+	"Topic :: Scientific/Engineering :: Information Analysis",
+	"Environment :: Console",
+]
+dependencies = [
+	"click~=8.1",
+	"elasticsearch~=8.11",
+	"elastic-transport~=8.10",
+	"elasticsearch_dsl~=8.11",
+	"mastodon-py~=1.8",
+	"requests-ratelimiter~=0.4",
+	"notebook~=7.0",
+	"seaborn~=0.13",
+	"numpy~=1.26",
+	"pandas~=2.1",
+	"scipy~=1.11",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+tests = [
+    "bandit[toml]~=1.7",
+    "mypy~=1.5",
+    "pandas-stubs~=2.0",
+    "pytest~=8.0",
+    "pytest-cov~=4.0",
+    "ruff~=0.2.1",
+]
+
+# [project.urls]
+# "Homepage" = "https://github.com/webis-de/TODO"
+# "Bug Tracker" = "https://github.com/webis-de/TODO/issues"
+
+[project.scripts]
+fediverse-analysis = "fediverse_analysis.cli:main"
+
+[build-system]
+requires = ["setuptools>=50", "setuptools_scm[toml]>=6.2", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["fediverse_analysis"]
+namespaces = false
+
+[tool.setuptools.package-data]
+mypkg = ["*.txt", "*.md", "*.rst"]
+
+[tool.setuptools_scm]
+
+[tool.ruff]
+exclude = [
+    "build",
+    "venv",
+    "notebooks",
+    "data",
+    "helm",
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = [
+    "build",
+    "venv",
+    "notebooks",
+    "data",
+    "helm",
+]
+
+[tool.bandit]
+exclude_dirs = [
+    "build",
+    "venv",
+    "notebooks",
+    "data",
+    "helm",
+]
+
+[tool.bandit.assert_used]
+skips = ["**/test_*.py"]
+
+[tool.pytest.ini_options]
+log_cli = "True"
