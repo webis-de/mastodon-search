@@ -1,12 +1,11 @@
 from datetime import datetime, UTC
-from json import dumps, JSONDecodeError, load, loads
+from json import dumps, loads
 from mastodon import (
         Mastodon, MastodonAPIError,
         MastodonInternalServerError, MastodonNetworkError,
         MastodonNotFoundError, MastodonVersionError
 )
-from sys import exit, stderr
-from threading import active_count, BoundedSemaphore, Lock, Thread
+from threading import BoundedSemaphore, Lock, Thread
 from time import sleep
 from typing import TextIO
 

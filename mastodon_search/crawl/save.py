@@ -1,8 +1,8 @@
 from collections import deque
 from collections.abc import Iterator
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, UTC
 from elasticsearch import (
-    AuthenticationException, AuthorizationException,
+    AuthenticationException,
     ConnectionError, NotFoundError
 )
 from elasticsearch.helpers import streaming_bulk
@@ -94,9 +94,9 @@ class _Save(deque[Status]):
     def init_elastic_connection(
         self,
         host: str,
-        password: str = '',
-        port: int = 9200,
-        username: str = ''
+        password: str,
+        port: int,
+        username: str,
     ) -> None:
         self.set_elastic(host, password, port, username)
 
@@ -112,7 +112,7 @@ class _Save(deque[Status]):
                 print('Elasticsearch authentication failed. '
                     +'Wrong username and/or password.')
                 exit(1)
-            except ConnectionError as e:
+            except ConnectionError:
                 if (retries < 3):
                     retries += 1
                 else:
@@ -132,7 +132,7 @@ class _Save(deque[Status]):
                 basic_auth=(username, password),
                 timeout=60
             )
-        except ValueError as e:
+        except ValueError:
             print('URL must include scheme and host, e. g. https://localhost')
             exit(1)
 
@@ -153,7 +153,7 @@ class _Save(deque[Status]):
             crawled_from_instance + '/' + str(status.get('id'))
         )
         acc = status.get('account')
-        if (acc.get('noindex') == True):
+        if acc.get('noindex') is True:
             dsl_status = Status(
                 meta={
                     'id': status_uuid,

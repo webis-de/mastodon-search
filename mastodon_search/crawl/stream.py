@@ -1,10 +1,9 @@
 from mastodon import (
     Mastodon, MastodonNetworkError, MastodonVersionError, StreamListener
 )
-from sys import exit, stderr
+from sys import stderr
 from threading import Thread
 from time import sleep
-from typing import TextIO
 
 from mastodon_search.crawl.crawl import Crawler
 from mastodon_search.crawl.save import _Save
@@ -68,9 +67,9 @@ class Streamer:
     def stream_updates_to_elastic(
         self,
         host: str,
-        password: str = '',
-        port: int = 9200,
-        username: str = ''
+        password: str,
+        port: int,
+        username: str,
     ) -> None:
         """Connect to the streaming API of the Mastodon instance and receive
         new public statuses. Write the statuses to Elasticsearch.

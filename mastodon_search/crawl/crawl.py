@@ -1,7 +1,6 @@
 from mastodon import Mastodon
 from requests import Session
 from requests_ratelimiter import LimiterAdapter
-from sys import exit, stderr
 from threading import Thread
 from time import sleep
 from urllib3 import Retry
@@ -75,10 +74,10 @@ class Crawler:
     def crawl_to_es(
         self,
         host: str,
-        password: str = '',
-        username: str = '',
-        max_wait_time: int = None,
-        port: int = 9200
+        password: str,
+        username: str,
+        port: int,
+        max_wait_time: int | None = None,
     ) -> None:
         """Use `_crawl_updates` to get new Mastodon statuses and write
         them to an Elasticsearch instance.

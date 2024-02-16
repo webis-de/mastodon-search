@@ -5,7 +5,6 @@ from numpy import exp
 from pandas import concat, DataFrame
 from scipy.stats import lognorm
 from typing import TextIO
-from urllib.request import urlopen
 
 class Analyzer:
     # How many weeks are taken into account for calculation of weekly data
@@ -161,7 +160,7 @@ class Analyzer:
                     user_agent='Mastocool'
                 )
                 try:
-                    statuses = mastodon.timeline(timeline='public')
+                    mastodon.timeline(timeline='public')
                 except MastodonAPIError:
                     deleted.append(instance)
                     to_delete.append(instance)
@@ -181,7 +180,7 @@ class Analyzer:
                     user_agent='Mastocool'
                 )
                 try:
-                    statuses = mastodon.timeline(timeline='public')
+                    mastodon.timeline(timeline='public')
                 except MastodonAPIError:
                     deleted.append(save_for_later[-1])
                     to_delete.append(save_for_later[-1])
