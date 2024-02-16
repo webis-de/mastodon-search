@@ -1,15 +1,19 @@
-# vim: shiftwidth=4 tabstop=4 noexpandtab
-
-FROM python:3.12
+FROM python:3.11
 
 WORKDIR /workspace/
+ADD pyproject.toml pyproject.toml
 
-COPY pyproject.toml ./
+ARG PSEUDO_VERSION=1
+RUN \
+    --mount=type=cache,target=/root/.cache/pip \
+    SETUPTOOLS_SCM_PRETEND_VERSION=${PSEUDO_VERSION} \
+    pip install -e .
 
 RUN \
-	--mount=type=cache,target=/root/.cache/pip \
-	pip install -e .
+    --mount=source=.git,target=.git,type=bind \
+    --mount=type=cache,target=/root/.cache/pip \
+    pip install -e .
 
-COPY fediverse_analysis fediverse_analysis/
+ADD . .
 
-ENTRYPOINT ["python3.12", "-m", "fediverse_analysis"]
+ENTRYPOINT ["python", "-m", "fediverse_analysis"]
