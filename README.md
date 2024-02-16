@@ -1,66 +1,101 @@
-# fediverse_analysis
+# 🕸️ mastodon-search
+
+A Corpus for Simulating Search on Mastodon.
 
 ## Installation
 
-1. Install [Python 3.12](https://python.org/downloads/).
-2. (Optional, but highly recommended) Create and activate virtual environment:
+1. Install [Python 3.11](https://python.org/downloads/) or higher.
+2. Create and activate a virtual environment:
+
     ```shell
-    python3.12 -m venv venv/
+    python3.11 -m venv venv/
     source venv/bin/activate
     ```
-3. Install dependencies. To just run the code:
+
+3. Install dependencies:
+
     ```shell
     pip install -e .
     ```
 
-    To also be able to interact with jupyter notebooks:
-    ```shell
-    pip install -e '.[notebook]'
-    ```
-
-
 ## Usage
 
-### Streaming / Crawling
-Run `fediverse_analysis` as module. It will list and explain all available commands:
+Use this repository to [crawl](#crawling), [analyze](#TODO), and [search](#TODO) Mastodon posts.
+
+Hint: You can always list all available commands of our crawler by running:
+
 ```shell
-python3.12 -m fediverse_analysis -h
+mastodon-search -h
 ```
 
-`python3.12 -m fediverse_analysis <command> -h` will display a more in-depth explanation of what the command does. The main command is `stream-to-es`. It opens a connection to a Mastodon instance and receives new statuses which are put to an Elasticsearch instance. Because streaming is not allowed on many instances, it uses GET requests to the API as a fallback. Here is an example:
+### Crawling
+
+#### Crawling a single instance
+
+The central command used to crawl an instance is `stream-to-es`. It opens a connection to the specified Mastodon instance, receives new posts, and stores them in an [Elasticsearch](#TODO) index:
+
 ```shell
-python3.12 -m fediverse_analysis stream-to-es -H 'http://example.com' -i 'mastodon' -u 'username' -P 'p4ssw0rd' troet.cafe
+mastodon-search stream-to-es --host https://es.example.com --username es_username --password es_password mastodon.example.com
 ```
 
-### Obtaining and analyzing instance data
-Data of all instances is already available at `/mnt/ceph/storage/data-in-progress/data-teaching/theses/wstud-thesis-ernst/instance-data/mastodon`. If you want to try it anyway, you need a `nodes.json` first. Beware though, it takes a few hours:
+Behind the scenes, this will fetch posts using Mastodon's [streaming API](#TODO).
+Because the streaming API is not available on many instances, our crawler gracefully falls back to using regular HTTP `GET` requests with the [public timeline API](#TODO).
+
+#### Obtaining and analyzing instance data
+
+An initial list of nodes can be obtained from <https://nodes.fediverse.party/>:
+
 ```shell
-wget 'https://nodes.fediverse.party/nodes.json'
-python -m fediverse_analysis obtain-instance-data nodes.json mastodon_instance_data
-```
-With this data you can calculate correlation between available statistics or draw a sample out of all the instances:
-```shell
-python -m fediverse_analysis calculate-correlation '/mnt/ceph/storage/data-in-progress/data-teaching/theses/wstud-thesis-ernst/instance-data/mastodon'
-python -m fediverse_analysis choose-instances '/mnt/ceph/storage/data-in-progress/data-teaching/theses/wstud-thesis-ernst/instance-data/mastodon' out.csv
+wget https://nodes.fediverse.party/nodes.json
 ```
 
+Now, let's enrich the list of instances with global and weekly activity stats.
+Be aware that the below command can take a few hours to complete:
 
-### Jupyter Notebooks
-Just run `jupyter notebook <notebook-name>`, e. g.:
 ```shell
-jupyter notebook notebooks/mastodon_instance_data_vis.ipynb
+mastodon-search obtain-instance-data nodes.json mastodon_instance_data/
 ```
+
+### Sampling instances for crawling
+
+With the activity stats obtained, we can draw a representative sample out of all the instances:
+
+```shell
+mastodon-search choose-instances mastodon_instance_data/ out.csv
+```
+
+> TODO: Don't we do this in the notebooks?
+
+### Analyzing
+
+We provide [Jupyter notebooks] for easily analyzing the instances and crawled posts.
+
+To open a notebook, just run, e.g.:
+
+```shell
+jupyter notebook notebooks/mastodon-instance-data-vis.ipynb
+```
+
+#### Correlation of instance statistics
+
+The correlation between all available instance statistics can be calculated by running:
+
+```shell
+mastodon-search calculate-correlation mastodon_instance_data/
+```
+
+> TODO: Fix everything below.
 
 
 ### Docker
 To run this program in a container, first build the image with this command:
 ```shell
-docker buildx build -t fediverse_analysis .
+docker buildx build -t mastodon_search .
 ```
 
-When running commands in a container, leave out `python3.12 -m fediverse_analysis`, as it is already specified as entrypoint. If you want to save statuses to an Elasticsearch on your localhost, the command will look like this. You might leave out `--network="host"` if it's not on your local machine.
+When running commands in a container, leave out `mastodon-search`, as it is already specified as entrypoint. If you want to save statuses to an Elasticsearch on your localhost, the command will look like this. You might leave out `--network="host"` if it's not on your local machine.
 ```shell
-docker run --network="host" fediverse_analysis:latest stream-to-es -H 'http://localhost' -u 'username' -P 'p4ssw0rd' 'pawoo.net'
+docker run --network="host" mastodon_search:latest stream-to-es -H 'http://localhost' -u 'username' -P 'p4ssw0rd' 'pawoo.net'
 ```
 
 ### Cluster (Helm/Kubernetes)
@@ -87,27 +122,17 @@ helm --namespace wo84xel uninstall mastodon-crawler
 
 To re-start the crawling, first uninstall and then re-install the Helm chart.
 
+## Links
 
-
-# Links
-
-## Standards
-
-- [ActivityPub-Spec](https://www.w3.org/TR/activitypub/)
-- [Activity Streams](https://www.w3.org/TR/activitystreams-core/) (Syntax für Aktivitäts-Daten)
-- [Activity-Streams-Vokabular](https://www.w3.org/TR/activitystreams-vocabulary/)
-- [WebFinger](https://www.rfc-editor.org/rfc/rfc7033)
-
-
-## Crawler
-
-- [Minoru's Fediverse crawler](https://github.com/Minoru/minoru-fediverse-crawler): Stellt eine Liste aller Fediverse-Server zusammen, die online sind
-    - [Webseite](https://nodes.fediverse.party/)
-    - [`nodes.json`](https://nodes.fediverse.party/nodes.json)
-
-
-## Sonstiges
-
-- [Liste von Fediverse-Software](https://github.com/emilebosch/awesome-fediverse)
-- Understanding [ActivityPub](https://seb.jambor.dev/posts/understanding-activitypub/)/[Mastodon](https://seb.jambor.dev/posts/understanding-activitypub-part-3-the-state-of-mastodon/) (inkl. Flowcharts)
-- [Mastodon-Dokumentation](https://docs.joinmastodon.org/)
+- Standards:
+  - [ActivityPub](https://w3.org/TR/activitypub/)
+  - [Activity Streams 2.0](https://w3.org/TR/activitystreams-core/) (syntax for activity data)
+  - [Activity Vocabulary](https://w3.org/TR/activitystreams-vocabulary/)
+  - [WebFinger](https://rfc-editor.org/rfc/rfc7033)
+- APIs:
+  - [Mastodon-Dokumentation](https://docs.joinmastodon.org/)
+- [List of Fediverse nodes](https://nodes.fediverse.party/) ([source code](https://github.com/Minoru/minoru-fediverse-crawler))
+- [Liste of Fediverse software](https://github.com/emilebosch/awesome-fediverse)
+- Blogs:
+  - [Understanding ActivityPub](https://seb.jambor.dev/posts/understanding-activitypub/)
+  - [Understanding Mastodon](https://seb.jambor.dev/posts/understanding-activitypub-part-3-the-state-of-mastodon/)
