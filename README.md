@@ -1,5 +1,5 @@
 [![CI status](https://img.shields.io/github/actions/workflow/status/webis-de/mastodon-search/ci.yml?branch=main&style=flat-square)](https://github.com/webis-de/mastodon-search/actions/workflows/ci.yml)
-[![Maintenance](https://img.shields.io/maintenance/yes/2024?style=flat-square)](https://github.com/webis-de/mastodon-search/graphs/contributors)  
+[![Maintenance](https://img.shields.io/maintenance/yes/2024?style=flat-square)](https://github.com/webis-de/mastodon-search/graphs/contributors)
 [![Issues](https://img.shields.io/github/issues/webis-de/mastodon-search?style=flat-square)](https://github.com/webis-de/mastodon-search/issues)
 [![Pull requests](https://img.shields.io/github/issues-pr/webis-de/mastodon-search?style=flat-square)](https://github.com/webis-de/mastodon-search/pulls)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/webis-de/mastodon-search?style=flat-square)](https://github.com/webis-de/mastodon-search/commits)
