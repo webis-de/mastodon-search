@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.12
 
 WORKDIR /workspace/
 ADD pyproject.toml pyproject.toml
