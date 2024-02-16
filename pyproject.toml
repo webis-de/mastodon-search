@@ -23,16 +23,15 @@ classifiers = [
 ]
 dependencies = [
 	"click~=8.1",
-	"elasticsearch~=8.11",
-	"elastic-transport~=8.10",
-	"elasticsearch_dsl~=8.11",
+	"elasticsearch7~=7.17",
+	"elasticsearch7-dsl~=7.3",
 	"mastodon-py~=1.8",
-	"requests-ratelimiter~=0.4",
-	"notebook~=7.0",
-	"seaborn~=0.13",
+	"requests-ratelimiter~=0.5.1",
+	"notebook~=7.1",
+	"seaborn~=0.13.2",
 	"numpy~=1.26",
-	"pandas~=2.1",
-	"scipy~=1.11",
+	"pandas~=2.2",
+	"scipy~=1.12",
 ]
 dynamic = ["version"]
 
