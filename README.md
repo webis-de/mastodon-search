@@ -1,3 +1,10 @@
+[![CI status](https://img.shields.io/github/actions/workflow/status/webis-de/mastodon-search/ci.yml?branch=main&style=flat-square)](https://github.com/webis-de/mastodon-search/actions/workflows/ci.yml)
+[![Maintenance](https://img.shields.io/maintenance/yes/2024?style=flat-square)](https://github.com/webis-de/mastodon-search/graphs/contributors)  
+[![Issues](https://img.shields.io/github/issues/webis-de/mastodon-search?style=flat-square)](https://github.com/webis-de/mastodon-search/issues)
+[![Pull requests](https://img.shields.io/github/issues-pr/webis-de/mastodon-search?style=flat-square)](https://github.com/webis-de/mastodon-search/pulls)
+[![Commit activity](https://img.shields.io/github/commit-activity/m/webis-de/mastodon-search?style=flat-square)](https://github.com/webis-de/mastodon-search/commits)
+[![License](https://img.shields.io/github/license/webis-de/mastodon-search?style=flat-square)](LICENSE)
+
 # 🕸️ mastodon-search
 
 A Corpus for Simulating Search on Mastodon.
@@ -39,7 +46,7 @@ mastodon-search stream-to-es --host https://es.example.com --username es_usernam
 ```
 
 Behind the scenes, this will fetch posts using Mastodon's [streaming API](#TODO).
-Because the streaming API is not available on many instances, our crawler gracefully falls back to using regular HTTP `GET` requests with the [public timeline API](#TODO).
+Because the streaming API is unavailable on many instances, our crawler gracefully falls back to using regular HTTP `GET` requests with the [public timeline API](#TODO).
 
 #### Obtaining and analyzing instance data
 
@@ -49,7 +56,7 @@ An initial list of nodes can be obtained from <https://nodes.fediverse.party/>:
 wget https://nodes.fediverse.party/nodes.json
 ```
 
-Now, let's enrich the list of instances with global and weekly activity stats.
+Now, enrich the list of instances with global and weekly activity stats.
 Be aware that the below command can take a few hours to complete:
 
 ```shell
@@ -84,45 +91,80 @@ The correlation between all available instance statistics can be calculated by r
 mastodon-search calculate-correlation mastodon_instance_data/
 ```
 
-> TODO: Fix everything below.
+### Docker image
 
+Our code can also run in a container.
+First, build the image with this command:
 
-### Docker
-To run this program in a container, first build the image with this command:
 ```shell
-docker buildx build -t mastodon_search .
+docker build -t mastodon_search .
 ```
 
-When running commands in a container, leave out `mastodon-search`, as it is already specified as entrypoint. If you want to save statuses to an Elasticsearch on your localhost, the command will look like this. You might leave out `--network="host"` if it's not on your local machine.
+To run commands using the Docker image just created, replace the `mastodon-search` command from the previous sections with `docker run mastodon_search`.
+If you want to save statuses to an Elasticsearch running on your `localhost`, the command should look like the following code snippet.
+(You can leave out `--network=host` if it's not on your local machine.)
+
 ```shell
-docker run --network="host" mastodon_search:latest stream-to-es -H 'http://localhost' -u 'username' -P 'p4ssw0rd' 'pawoo.net'
+docker run --network host mastodon_search stream-to-es --host http://localhost --username es_username --password es_password mastodon.example.com
 ```
 
-### Cluster (Helm/Kubernetes)
-Crawling can be parallelized on a Kubernetes cluster.
+## Deployment
 
-#### Installation
-Install [Helm](https://helm.sh/docs/intro/quickstart/) and configure `kubectl` for your cluster.
+Crawling can be parallelized on a [Kubernetes](#TODO) cluster.
+To do so, install [Helm](https://helm.sh/docs/intro/quickstart/) and configure `kubectl` for your cluster.
 
-#### Deployment
-
-Let's deploy the Helm chart on the cluster to start the crawling:
+You are then ready to deploy the Helm chart on the cluster and start the crawling:
 
 ```shell
-helm --namespace wo84xel install --dry-run --set esUsername="<REDACTED>" --set esPassword="<REDACTED>" --set-file instances="./data/instances.txt" mastodon-crawler ./code/helm
+helm install --dry-run --set esUsername="<REDACTED>" --set esPassword="<REDACTED>" --set-file instances="./data/instances.txt" mastodon-crawler ./helm
 ```
 
-#### Uninstall
+If the above command worked and the Kubernetes resources to be deployed look good to you, just remove the `--dry-run` flag to actually deploy the crawlers.
 
-To stop the crawling, you can uninstall the Helm chart:
+To stop the crawling, just uninstall the Helm chart:
 
 ```shell
-helm --namespace wo84xel uninstall mastodon-crawler
+helm uninstall mastodon-crawler
 ```
 
 To re-start the crawling, first uninstall and then re-install the Helm chart.
 
-## Links
+## Development
+
+First, install [Python 3.11](https://python.org/downloads/) or higher and then clone this repository.
+From inside the repository directory, create a virtual environment and activate it:
+
+```shell
+python3.11 -m venv venv/
+source venv/bin/activate
+```
+
+Then, install the test dependencies:
+
+```shell
+pip install -e .[tests]
+```
+
+After having implemented a new feature, please check the code format, inspect common LINT errors, and run all unit tests with the following commands:
+
+```shell
+ruff .                         # Code format and LINT
+mypy .                         # Static typing
+bandit -c pyproject.toml -r .  # Security
+pytest .                       # Unit tests
+```
+
+## Contribute
+
+If you have found a bug in this crawler or feel some feature is missing, please create an [issue](https://github.com/webis-de/mastodon-search/issues). We also gratefully accept [pull requests](https://github.com/webis-de/mastodon-search/pulls)!
+
+If you are unsure about anything, post an [issue](https://github.com/webis-de/mastodon-search/issues/new) or contact us:
+
+- [heinrich.reimer@uni-jena.de](mailto:heinrich.reimer@uni-jena.de)
+
+We are happy to help!
+
+## Further resources
 
 - Standards:
   - [ActivityPub](https://w3.org/TR/activitypub/)
@@ -136,3 +178,7 @@ To re-start the crawling, first uninstall and then re-install the Helm chart.
 - Blogs:
   - [Understanding ActivityPub](https://seb.jambor.dev/posts/understanding-activitypub/)
   - [Understanding Mastodon](https://seb.jambor.dev/posts/understanding-activitypub-part-3-the-state-of-mastodon/)
+
+## License
+
+This repository is released under the [MIT license](LICENSE).
