@@ -41,9 +41,9 @@ spec:
               name: {{ $.Release.Name }}-elasticsearch
               key: password
         command:
-        - python3.12
+        - python
         - -m
-        - fediverse_analysis
+        - mastodon_search
         - stream-to-es
         - -H
         - "$(ES_HOST)"

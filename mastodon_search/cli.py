@@ -14,7 +14,7 @@ def main():
 )
 @click.argument('file', type=click.File('r'))
 def calculate_correlation(file):
-    from fediverse_analysis.instance_data import analyze
+    from mastodon_search.instance_data import analyze
     an = analyze.Analyzer(file)
     an.correlate()
 
@@ -33,7 +33,7 @@ def calculate_correlation(file):
 @click.argument('output_file_full', type=click.File('w+'), required=True)
 @click.argument('output_file_pure', type=click.File('w+'), required=True)
 def choose_instances(input_file, output_file_full, output_file_pure):
-    from fediverse_analysis.instance_data import analyze
+    from mastodon_search.instance_data import analyze
     an = analyze.Analyzer(input_file)
     an.choose(output_file_full, output_file_pure)
 
@@ -53,7 +53,7 @@ def choose_instances(input_file, output_file_full, output_file_pure):
 @click.argument('output_file', type=click.Path(
     dir_okay=False, writable=True), required=True)
 def obtain_instance_data(input_file, output_file):
-    from fediverse_analysis.instance_data import obtain
+    from mastodon_search.instance_data import obtain
     obtainer = obtain.Obtainer(input_file, output_file)
     obtainer.get_instances_data()
 
@@ -74,6 +74,6 @@ def obtain_instance_data(input_file, output_file):
     help='Username for ES authentication')
 @click.argument('instance')
 def stream_to_es(instance, host, password, port, username):
-    from fediverse_analysis.crawl import stream
+    from mastodon_search.crawl import stream
     streamer = stream.Streamer(instance)
     streamer.stream_updates_to_elastic(host, password, port, username)

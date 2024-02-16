@@ -6,7 +6,7 @@ from threading import Thread
 from time import sleep
 from urllib3 import Retry
 
-from fediverse_analysis.crawl.save import _Save
+from mastodon_search.crawl.save import _Save
 
 
 class Crawler:

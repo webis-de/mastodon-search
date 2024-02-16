@@ -6,8 +6,8 @@ from threading import Thread
 from time import sleep
 from typing import TextIO
 
-from fediverse_analysis.crawl.crawl import Crawler
-from fediverse_analysis.crawl.save import _Save
+from mastodon_search.crawl.crawl import Crawler
+from mastodon_search.crawl.save import _Save
 
 
 class Streamer:

@@ -51,7 +51,7 @@ tests = [
 "Bug Tracker" = "https://github.com/webis-de/mastodon-search/issues"
 
 [project.scripts]
-fediverse-analysis = "fediverse_analysis.cli:main"
+mastodon-search = "mastodon_search.cli:main"
 
 [build-system]
 requires = ["setuptools>=50", "setuptools_scm[toml]>=6.2", "wheel"]
@@ -61,7 +61,6 @@ build-backend = "setuptools.build_meta"
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["fediverse_analysis"]
 namespaces = false
 
 [tool.setuptools.package-data]

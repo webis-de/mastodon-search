@@ -11,7 +11,7 @@ from threading import Lock, Thread
 from time import sleep
 from uuid import NAMESPACE_URL, uuid5
 
-from fediverse_analysis.elastic_dsl.mastodon import Status
+from mastodon_search.elastic_dsl.mastodon import Status
 
 
 class _Save(deque[Status]):

@@ -16,4 +16,4 @@ RUN \
 
 ADD . .
 
-ENTRYPOINT ["python", "-m", "fediverse_analysis"]
+ENTRYPOINT ["python", "-m", "mastodon_search"]
