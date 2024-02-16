@@ -1,5 +1,5 @@
 [project]
-name = "search-on-mastodon"
+name = "mastodon-search"
 authors = [
     { name = "Matti Wiegmann", email = "matti.wiegmann@uni-weimar.de" },
     { name = "Jan Heinrich Reimer", email = "heinrich.reimer@uni-jena.de" },
@@ -8,12 +8,11 @@ authors = [
     { name = "Benno Stein", email = "benno.stein@uni-weimar.de" },
     { name = "Martin Potthast", email = "martin.potthast@uni-leipzig.de" },
 ]
-# description = "TODO"
+description = "A Corpus for Simulating Search on Mastodon"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
 	"Programming Language :: Python :: 3 :: Only",
-	"Programming Language :: Python :: 3.10",
 	"Programming Language :: Python :: 3.11",
 	"Programming Language :: Python :: 3.12",
 	"Intended Audience :: Science/Research",
@@ -47,9 +46,9 @@ tests = [
     "ruff~=0.2.1",
 ]
 
-# [project.urls]
-# "Homepage" = "https://github.com/webis-de/TODO"
-# "Bug Tracker" = "https://github.com/webis-de/TODO/issues"
+[project.urls]
+"Homepage" = "https://github.com/webis-de/mastodon-search"
+"Bug Tracker" = "https://github.com/webis-de/mastodon-search/issues"
 
 [project.scripts]
 fediverse-analysis = "fediverse_analysis.cli:main"
