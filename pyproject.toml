@@ -25,6 +25,7 @@ dependencies = [
 	"click~=8.1",
 	"elasticsearch7~=7.17",
 	"elasticsearch7-dsl~=7.3",
+    "favicon~=0.7.0",
 	"mastodon-py~=1.8",
 	"requests-ratelimiter~=0.5.1",
 	"notebook~=7.1",
