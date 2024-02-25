@@ -1,6 +1,6 @@
-from json import loads
+from json import loads, dumps
 from mastodon import Mastodon, MastodonAPIError, MastodonNetworkError
-from numpy import exp
+from numpy import exp, inf
 from pandas import concat, DataFrame
 from scipy.stats import lognorm
 from typing import TextIO
@@ -151,7 +151,7 @@ class Analyzer:
         self.df.sort_values("log_probability", inplace=True)
         self.df["weight"] = exp(-self.df["log_probability"])
         df_sample_pre = self.df.sample(
-            n=SAMPLE_SIZE, replace=False, weights=self.df["weight"])
+            n=sample_size, replace=False, weights=self.df["weight"])
 
         # Remove instances that require a token for the timelines API.
         df_sample = DataFrame(columns=df_sample_pre.columns)
@@ -211,11 +211,11 @@ class Analyzer:
                     df_sample, df_sample_pre.drop(to_delete)
                 ) if not d.empty
             )
-            if (len(df_sample) >= SAMPLE_SIZE):
+            if (len(df_sample) >= sample_size):
                 break
             self.df.drop(df_sample_pre.index, inplace=True)
             df_sample_pre = self.df.sample(
-                n=(SAMPLE_SIZE - len(df_sample)),
+                n=(sample_size - len(df_sample)),
                 replace=False,
                 weights=self.df["weight"]
             )
@@ -224,7 +224,4 @@ class Analyzer:
             f.write(dumps(sorted(deleted), ensure_ascii=False))
         df_sample.sort_index(inplace=True)
         # Full DataFrame. Maybe we want to have that data later.
-        df_sample.to_csv(out_file_full)
-        sampled_instances = df_sample.reset_index()['instance']
-        # Pure instance list only.
-        sampled_instances.to_csv(out_file_pure, index=False, header=False)
+        df_sample.to_csv(out_file_prefix + '.csv')

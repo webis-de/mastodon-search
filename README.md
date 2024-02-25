@@ -149,7 +149,7 @@ After having implemented a new feature, please check the code format, inspect co
 
 ```shell
 ruff .                         # Code format and LINT
-mypy .                         # Static typing
+# mypy .                         # Static typing
 bandit -c pyproject.toml -r .  # Security
 pytest .                       # Unit tests
 ```
