@@ -1,7 +1,6 @@
 from mastodon import Mastodon
 from requests import Session
 from requests_ratelimiter import LimiterAdapter
-from sys import exit
 from threading import Thread
 from time import sleep
 from urllib3 import Retry

@@ -1,4 +1,4 @@
-from json import dumps, loads
+from json import loads
 from mastodon import Mastodon, MastodonAPIError, MastodonNetworkError
 from numpy import exp
 from pandas import concat, DataFrame
@@ -170,7 +170,7 @@ class Analyzer:
                     user_agent=USER_AGENT
                 )
                 try:
-                    statuses = mastodon.timeline(timeline='public')
+                    mastodon.timeline(timeline='public')
                 except MastodonAPIError:
                     to_delete.append(instance)
                 except MastodonNetworkError:
@@ -189,7 +189,7 @@ class Analyzer:
                     user_agent=USER_AGENT
                 )
                 try:
-                    statuses = mastodon.timeline(timeline='public')
+                    mastodon.timeline(timeline='public')
                 except MastodonAPIError:
                     to_delete.append(save_for_later[-1])
                     save_for_later.pop()
@@ -224,7 +224,7 @@ class Analyzer:
             f.write(dumps(sorted(deleted), ensure_ascii=False))
         df_sample.sort_index(inplace=True)
         # Full DataFrame. Maybe we want to have that data later.
-        df_sample.to_csv(out_file_prefix + '.csv')
+        df_sample.to_csv(out_file_full)
         sampled_instances = df_sample.reset_index()['instance']
         # Pure instance list only.
         sampled_instances.to_csv(out_file_pure, index=False, header=False)

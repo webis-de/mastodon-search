@@ -96,8 +96,8 @@ class _Save(deque[Status]):
         self,
         host: str,
         password: str,
-        port: int = 9200,
-        username: str = ''
+        port: int,
+        username: str,
     ) -> None:
         """Set and check Elasticsearch connection.
 
@@ -111,7 +111,7 @@ class _Save(deque[Status]):
                 basic_auth=(username, password),
                 timeout=60
             )
-        except ValueError as e:
+        except ValueError:
             print('URL must include scheme and host, e. g. https://localhost')
             exit(1)
 
