@@ -1,10 +1,11 @@
-from json import loads
+from json import dumps, loads
 from mastodon import Mastodon, MastodonAPIError, MastodonNetworkError
 from math import inf
 from numpy import exp
 from pandas import concat, DataFrame
 from scipy.stats import lognorm
 from typing import TextIO
+from urllib.request import urlopen
 
 class Analyzer:
     # How many weeks are taken into account for calculation of weekly data
@@ -112,9 +113,7 @@ class Analyzer:
         self.df = self.df[~(self.df['total_statuses'] < 0)]
         print(f'Removed for invalid data (faked/negative values): {len_pre - len(self.df)}\n')
 
-    def choose(self, out_file_full: TextIO, out_file_pure: TextIO) -> None:
-        SAMPLE_SIZE = 1000
-
+    def choose(self, out_file_prefix: str, sample_size: int = 1000) -> None:
         print('––––––––––––––––––––––––––––––––')
         cols_prob_measures = {
             col: lognorm
@@ -160,7 +159,7 @@ class Analyzer:
                     user_agent='Mastocool'
                 )
                 try:
-                    mastodon.timeline(timeline='public')
+                    statuses = mastodon.timeline(timeline='public')
                 except MastodonAPIError:
                     deleted.append(instance)
                     to_delete.append(instance)
@@ -180,7 +179,7 @@ class Analyzer:
                     user_agent='Mastocool'
                 )
                 try:
-                    mastodon.timeline(timeline='public')
+                    statuses = mastodon.timeline(timeline='public')
                 except MastodonAPIError:
                     deleted.append(save_for_later[-1])
                     to_delete.append(save_for_later[-1])
@@ -212,11 +211,11 @@ class Analyzer:
                 weights=self.df["weight"]
             )
 
-        print(f'\n{len(deleted)} instances removed for requiring a token '
-              +f'for the timelines API or timeout:\n{deleted}')
+        with open(out_file_prefix + '_removed.jsonl', mode='w+') as f:
+            f.write(dumps(deleted, ensure_ascii=False))
         df_sample.sort_index(inplace=True)
         # Full DataFrame. Maybe we want to have that data later.
-        df_sample.to_csv(out_file_full)
+        df_sample.to_csv(out_file_prefix + '.csv')
         sampled_instances = df_sample.reset_index()['instance']
         # Pure instance list only.
         sampled_instances.to_csv(out_file_pure, index=False, header=False)

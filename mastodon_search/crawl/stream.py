@@ -1,9 +1,10 @@
 from mastodon import (
     Mastodon, MastodonNetworkError, MastodonVersionError, StreamListener
 )
-from sys import stderr
+from sys import exit, stderr
 from threading import Thread
 from time import sleep
+from typing import TextIO
 
 from mastodon_search.crawl.crawl import Crawler
 from mastodon_search.crawl.save import _Save

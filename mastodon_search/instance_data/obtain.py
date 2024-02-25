@@ -1,20 +1,17 @@
 from datetime import datetime, UTC
-from json import dumps, loads
+from json import dumps, JSONDecodeError, load, loads
 from mastodon import (
         Mastodon, MastodonAPIError,
         MastodonInternalServerError, MastodonNetworkError,
         MastodonNotFoundError, MastodonVersionError
 )
-from threading import BoundedSemaphore, Lock, Thread
+from sys import exit, stderr
+from threading import active_count, BoundedSemaphore, Lock, Thread
 from time import sleep
 from typing import TextIO
 
 
 class Obtainer:
-    # Max. number of worker threads. Minimum: 1.
-    # If using too many, you'll likely get rate limited and gather no data at
-    # all. 8 was fine, at least for one run.
-    MAX_THREADS = 6
     USER_AGENT = 'Webis Mastodon crawler (https://webis.de/, webis@listserv.uni-weimar.de)'
 
     def __init__(self, input_file: TextIO, output_file: str) -> None:
@@ -28,10 +25,12 @@ class Obtainer:
         self.limiter = BoundedSemaphore(self.MAX_THREADS + 2)
         self.lock = Lock()
 
-    def get_instances_data(self) -> None:
+    def get_instances_data(self, num_threads: int = 4) -> None:
         """Read an instance list from a JSON file , query all instances for
         `nodeinfo` and `instance/activity` and save the data to a file.
         """
+        # The 2 additional threads are the main and a write-to-file thread.
+        self.limiter = BoundedSemaphore(num_threads + 2)
         # Read input file.
         lines = self.input_file.readlines()
         # Reading a `nodes.json` file.
