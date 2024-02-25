@@ -1,9 +1,8 @@
 from collections import deque
 from collections.abc import Iterator
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, UTC
 from elasticsearch import (
-    AuthenticationException, AuthorizationException,
-    ConnectionError, NotFoundError
+    AuthenticationException, ConnectionError, NotFoundError
 )
 from elasticsearch.helpers import streaming_bulk
 from elasticsearch_dsl import connections, Index
@@ -11,18 +10,19 @@ from threading import Lock, Thread
 from time import sleep
 from uuid import NAMESPACE_URL, uuid5
 
+from mastodon_search.globals import INDEX_PREFIX
 from mastodon_search.elastic_dsl.mastodon import Status
 
 
 class _Save(deque[Status]):
-    """Provide methods to store ActivityPub data on disk."""
+    """Provide methods to store ActivityPub data to Elasticsearch.
+    Implement deque to be able to temporarily store statuses.
+    """
     # How many statuses are saved to Elasticsearch at once.
     CHUNK_SIZE = 500
     # Save to Elasticsearch after this number of minutes, even if there are
-    # less statuses than CHUNK_SIZE. Note that saving only takes place after
-    # the next status is received.
+    # less statuses than CHUNK_SIZE.
     MAX_MINUTES_TO_FLUSH = 30
-    INDEX_PREFIX = 'corpus_mastodon_statuses'
     INT_MAX = 2**31 - 1
     INT_MIN = -2**31
     NAMESPACE_FA = uuid5(NAMESPACE_URL, 'fediverse_analysis')
@@ -30,7 +30,6 @@ class _Save(deque[Status]):
 
     def __init__(self) -> None:
         self.elastic = None
-        self.flush_minutes = 0
         self.lock = Lock()
         self.flush_thread = Thread(
             target=self.flush, daemon=True)
@@ -45,15 +44,17 @@ class _Save(deque[Status]):
         return (str(value) if value else None)
 
     def flush(self) -> None:
+        """Pop statuses from self and save to Elasticsearch periodically."""
+        flush_minutes = 0
         while True:
             sleep(60)
             if (
                 len(self) < self.CHUNK_SIZE
-                and self.flush_minutes < self.MAX_MINUTES_TO_FLUSH
+                and flush_minutes < self.MAX_MINUTES_TO_FLUSH
             ):
-                self.flush_minutes += 1
+                flush_minutes += 1
                 continue
-            self.flush_minutes = 0
+            flush_minutes = 0
             if (len(self) == 0):
                 continue
             with self.lock:
@@ -76,7 +77,7 @@ class _Save(deque[Status]):
         every month's index and also a possible global index.
         """
         try:
-            status = Index(f'{self.INDEX_PREFIX}*')\
+            status = Index(f'{INDEX_PREFIX}*')\
                     .search()\
                     .filter('term', crawled_from_instance=instance)\
                     .sort('-crawled_at')\
@@ -98,33 +99,11 @@ class _Save(deque[Status]):
         port: int = 9200,
         username: str = ''
     ) -> None:
-        self.set_elastic(host, password, port, username)
+        """Set and check Elasticsearch connection.
 
-        retries = 0
-        index = Index(datetime.now().strftime(f'{self.INDEX_PREFIX}_%Y_%m'))
-        while (True):
-            try:
-                # exists should be run every time to actually check the
-                # connection and credentials.
-                if (index.exists()):
-                    pass
-            except AuthenticationException:
-                print('Elasticsearch authentication failed. '
-                    +'Wrong username and/or password.')
-                exit(1)
-            except ConnectionError as e:
-                if (retries < 3):
-                    retries += 1
-                else:
-                    raise
-            except NotFoundError:
-                self.flush_thread.start()
-                return
-            else:
-                self.flush_thread.start()
-                return
-
-    def set_elastic(self, host, password, port, username) -> None:
+        Arguments:
+        see mastodon_search.cli: stream_to_es
+        """
         elastic_host = host + ':' + str(port)
         try:
             self.elastic = connections.create_connection(
@@ -135,6 +114,29 @@ class _Save(deque[Status]):
         except ValueError as e:
             print('URL must include scheme and host, e. g. https://localhost')
             exit(1)
+
+        retries = 0
+        index = Index(datetime.now().strftime(f'{INDEX_PREFIX}_%Y_%m'))
+        while (True):
+            try:
+                # exists should be run every time to actually check the
+                # connection and credentials.
+                if (index.exists()):
+                    pass
+            except AuthenticationException:
+                print('Elasticsearch authentication failed. '
+                    +'Wrong username and/or password.')
+                exit(1)
+            except ConnectionError:
+                if (retries < 3):
+                    retries += 1
+                else:
+                    raise
+            except NotFoundError:
+                break
+            else:
+                break
+        self.flush_thread.start()
 
     def write_status(
         self, status: dict, crawled_from_instance: str, api_method: str
@@ -157,7 +159,7 @@ class _Save(deque[Status]):
             dsl_status = Status(
                 meta={
                     'id': status_uuid,
-                    'index': time.strftime(f'{self.INDEX_PREFIX}_%Y_%m')
+                    'index': time.strftime(f'{INDEX_PREFIX}_%Y_%m')
                 },
                 crawled_at=time
             )
@@ -174,7 +176,7 @@ class _Save(deque[Status]):
             dsl_status = Status(
                 meta={
                     'id': status_uuid,
-                    'index': time.strftime(f'{self.INDEX_PREFIX}_%Y_%m')
+                    'index': time.strftime(f'{INDEX_PREFIX}_%Y_%m')
                 },
                 api_url=('https://' + crawled_from_instance
                            + '/api/v1/statuses/' + str(status.get('id'))),

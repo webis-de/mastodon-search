@@ -1,25 +1,33 @@
 from json import dumps, loads
 from mastodon import Mastodon, MastodonAPIError, MastodonNetworkError
-from math import inf
 from numpy import exp
 from pandas import concat, DataFrame
 from scipy.stats import lognorm
 from typing import TextIO
-from urllib.request import urlopen
+
+from mastodon_search.globals import USER_AGENT
+
 
 class Analyzer:
     # How many weeks are taken into account for calculation of weekly data
     num_weeks = 4
 
-    def __init__(self, file: TextIO) -> None:
+    def __init__(self, input_file: TextIO) -> None:
+        """Arguments:
+        input_file -- A file to load fediverse data from. Should be the output
+        of the `obtain_instance_data` command.
+        """
         self.data_len = 0
         self.df = None
         self.n_empty = 0
         self.n_invalid = 0
 
-        self._load_data(file)
+        self._load_data(input_file)
 
     def _load_data(self, file: TextIO) -> None:
+        """Read a fediverse data file (see: __init__) and create a pandas
+        DataFrame from the data.
+        """
         data = []
         len_raw_data = 0
         # Load raw data
@@ -114,6 +122,9 @@ class Analyzer:
         print(f'Removed for invalid data (faked/negative values): {len_pre - len(self.df)}\n')
 
     def choose(self, out_file_prefix: str, sample_size: int = 1000) -> None:
+        """Sample `sample_size` instances from all instances.
+        See: mastodon_search.cli: choose_instances
+        """
         print('––––––––––––––––––––––––––––––––')
         cols_prob_measures = {
             col: lognorm
@@ -156,12 +167,11 @@ class Analyzer:
                 mastodon = Mastodon(
                     api_base_url=instance,
                     request_timeout=30,
-                    user_agent='Mastocool'
+                    user_agent=USER_AGENT
                 )
                 try:
                     statuses = mastodon.timeline(timeline='public')
                 except MastodonAPIError:
-                    deleted.append(instance)
                     to_delete.append(instance)
                 except MastodonNetworkError:
                     save_for_later.append(instance)
@@ -176,12 +186,11 @@ class Analyzer:
                 mastodon = Mastodon(
                     api_base_url=save_for_later[-1],
                     request_timeout=30,
-                    user_agent='Mastocool'
+                    user_agent=USER_AGENT
                 )
                 try:
                     statuses = mastodon.timeline(timeline='public')
                 except MastodonAPIError:
-                    deleted.append(save_for_later[-1])
                     to_delete.append(save_for_later[-1])
                     save_for_later.pop()
                     tries = 0
@@ -189,13 +198,13 @@ class Analyzer:
                     if (tries <= 3):
                         tries += 1
                     else:
-                        deleted.append(save_for_later[-1])
                         to_delete.append(save_for_later[-1])
                         save_for_later.pop()
                         tries = 0
                     continue
                 else:
                     save_for_later.pop()
+            deleted.extend(to_delete)
             print()
             df_sample = concat(
                 d for d in (
@@ -212,7 +221,7 @@ class Analyzer:
             )
 
         with open(out_file_prefix + '_removed.jsonl', mode='w+') as f:
-            f.write(dumps(deleted, ensure_ascii=False))
+            f.write(dumps(sorted(deleted), ensure_ascii=False))
         df_sample.sort_index(inplace=True)
         # Full DataFrame. Maybe we want to have that data later.
         df_sample.to_csv(out_file_prefix + '.csv')

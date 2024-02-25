@@ -1,10 +1,9 @@
 from mastodon import (
     Mastodon, MastodonNetworkError, MastodonVersionError, StreamListener
 )
-from sys import exit, stderr
+from sys import stderr
 from threading import Thread
 from time import sleep
-from typing import TextIO
 
 from mastodon_search.crawl.crawl import Crawler
 from mastodon_search.crawl.save import _Save
@@ -27,12 +26,14 @@ class Streamer:
         self.mastodon = Mastodon(api_base_url=self.instance)
         # Give up streaming after this number of consecutive failed attempts.
         self.max_retries = 5
-        self.retries = 0
         self.save = _Save()
         self.timer = Thread(target=self._print_timer, daemon=True)
         self.crawler = Crawler(self.instance, self.save)
 
     def _intermediate_crawl(self) -> None:
+        """Fetch statuses, starting from the last seen one, until we are up
+        to date.
+        """
         self.is_running = False
         if (self.last_seen_id):
             print('Fetching missed statuses.', flush=True)
@@ -52,6 +53,9 @@ class Streamer:
             self.timer.start()
 
     def _print_timer(self) -> None:
+        """Print `created_at` value of the last crawled status periodically.
+        Run as thread to not block anything else.
+        """
         sleep(60)
         while True:
             if (not self.is_running):
@@ -75,11 +79,15 @@ class Streamer:
         """Connect to the streaming API of the Mastodon instance and receive
         new public statuses. Write the statuses to Elasticsearch.
         Use crawling of the API via GET requests as a fallback.
+
+        Arguments:
+        see mastodon_search.cli: stream_to_es
         """
         self.save.init_elastic_connection(host, password, port, username)
         stream_listener = _UpdateStreamListener(self.instance, self.save, self)
         self.last_seen_id = self.save.get_last_id(self.instance)
         self._intermediate_crawl()
+        retries = 0
         while True:
             self.did_stream_work = False
             print('Streaming statuses. Last streamed status created at:',
@@ -109,11 +117,11 @@ class Streamer:
                 break
             sleep(3)
             if (self.did_stream_work):
-                self.retries = 0
+                retries = 0
             else:
-                self.retries += 1
+                retries += 1
                 # Too many consecutive failed attempts. Give up streaming.
-                if (self.retries >= self.max_retries):
+                if (retries >= self.max_retries):
                     break
             self._intermediate_crawl()
         print('Falling back to crawling.', file=stderr, flush=True)
@@ -126,7 +134,6 @@ class _UpdateStreamListener(StreamListener):
     stream.
     """
     def __init__(self, instance: str, save: _Save, streamer: Streamer) -> None:
-        self.counter = 0
         self.instance = instance
         self.save = save
         self.streamer = streamer

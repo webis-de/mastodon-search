@@ -1,19 +1,18 @@
 from datetime import datetime, UTC
-from json import dumps, JSONDecodeError, load, loads
+from json import dumps, loads
 from mastodon import (
         Mastodon, MastodonAPIError,
         MastodonInternalServerError, MastodonNetworkError,
         MastodonNotFoundError, MastodonVersionError
 )
-from sys import exit, stderr
-from threading import active_count, BoundedSemaphore, Lock, Thread
+from threading import BoundedSemaphore, Lock, Thread
 from time import sleep
 from typing import TextIO
 
+from mastodon_search.globals import USER_AGENT
+
 
 class Obtainer:
-    USER_AGENT = 'Webis Mastodon crawler (https://webis.de/, webis@listserv.uni-weimar.de)'
-
     def __init__(self, input_file: TextIO, output_file: str) -> None:
         self.input_file = input_file
         self.output_file = output_file
@@ -26,11 +25,11 @@ class Obtainer:
         self.lock = Lock()
 
     def get_instances_data(self, num_threads: int = 4) -> None:
-        """Read an instance list from a JSON file , query all instances for
-        `nodeinfo` and `instance/activity` and save the data to a file.
+        """Read an fediverse instance list from a JSON file, query all
+        instances for `nodeinfo` and `instance/activity` and save the data to
+        a file.
         """
-        # The 2 additional threads are the main and a write-to-file thread.
-        self.limiter = BoundedSemaphore(num_threads + 2)
+        self.limiter = BoundedSemaphore(num_threads)
         # Read input file.
         lines = self.input_file.readlines()
         # Reading a `nodes.json` file.
@@ -68,6 +67,9 @@ class Obtainer:
             t.start()
 
     def query_instance(self, instance: str) -> None:
+        """Get `nodeinfo` and `instance/activity` from an instance if not
+        already present.
+        """
         data = self.input_data[instance]
         if (data['nodeinfo'] and data['activity']):
             skip = True
@@ -76,7 +78,7 @@ class Obtainer:
                 mastodon = Mastodon(
                     api_base_url=instance,
                     request_timeout=30,
-                    user_agent=self.USER_AGENT
+                    user_agent=USER_AGENT
                 )
             # {Index,Value}Error occur if the Mastodon version looks "weird",
             # e. g. if it's not actually a Mastodon server.
@@ -111,6 +113,9 @@ class Obtainer:
         self.limiter.release()
 
     def write_data(self) -> None:
+        """Write instances' data to a file periodically.
+        Run this as a thread.
+        """
         with open(self.output_file, mode='a') as f:
             while (True):
                 if (self.done >= self.todo):

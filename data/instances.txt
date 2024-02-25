@@ -27,7 +27,6 @@ androiddev.social
 ani.work
 animal-crossing.mastportal.info
 animalliberation.social
-anime.kona.moe
 anticapitalista.it
 aoir.social
 ap.ketsuben.red
@@ -58,12 +57,12 @@ bakedbean.xyz
 bangdream.space
 bark.lgbt
 barkclub.xyz
+barkoczy.social
 batchats.net
 bayes.club
 bbq.snoot.com
 beach.city
 beamship.mpaq.org
-bear.community
 beige.party
 berlin.social
 beta.qdon.space
@@ -78,7 +77,6 @@ bkcastle.net
 blackrock.city
 blackrocks.social
 blacktwitter.io
-blimps.xyz
 blockriot.com
 blogi.social
 blorbo.social
@@ -114,6 +112,7 @@ clube.social
 colearn.social
 colorid.es
 comics.town
+communist.accountant
 computer-club.online
 computerfairi.es
 comunidad.nvda.es
@@ -124,6 +123,7 @@ corteximplant.com
 cosocial.ca
 cr8r.gg
 craba.cab
+crashtodon.net
 creativewriting.social
 critcare.social
 cryptodon.lol
@@ -216,6 +216,7 @@ federate.social
 federated.press
 federatedfandom.net
 fedi.halcyon-is.land
+fedibird.com
 fedinerds.social
 fedisabled.social
 fediscience.org
@@ -340,7 +341,6 @@ iztasocial.site
 jasette.facil.services
 jawns.club
 jazztodon.com
-jidaar.net
 jit.social
 jorts.horse
 journodon.com
@@ -359,7 +359,6 @@ kinkyelephant.com
 kirche.social
 kiritan.work
 klog.tw
-kmy.blue
 kommunismus.social
 kopimi.space
 kopiti.am
@@ -385,6 +384,7 @@ liberdon.com
 libori.social
 library.love
 libretooth.gr
+liker.social
 lile.cl
 lincolnite.net
 linernotes.club
@@ -461,6 +461,7 @@ mastodon.catgirl.cloud
 mastodon.cesko.digital
 mastodon.cipherbliss.com
 mastodon.cisti.org
+mastodon.cl
 mastodon.cloudsecurityofficehours.com
 mastodon.coffee
 mastodon.com.br
@@ -562,6 +563,7 @@ meow.social
 merovingian.club
 merveilles.town
 mesmerized.online
+metalhead.club
 metalverse.social
 metrobus.masto.host
 micc.masto.host
@@ -584,7 +586,6 @@ mstdn.games
 mstdn.guru
 mstdn.in.th
 mstdn.kemono-friends.info
-mstdn.lt
 mstdn.maud.io
 mstdn.md
 mstdn.mx
@@ -762,7 +763,6 @@ seo.chat
 seocommunity.social
 sfba.social
 shakedown.social
-shao.life
 shark.community
 shotgunlife.social
 sigmoid.social
@@ -774,6 +774,7 @@ snabelen.no
 snaggletooth.life
 snailedit.social
 socel.net
+social.1up.ninja
 social.apreslanu.it
 social.audiovalentine.com
 social.bim.land
@@ -908,7 +909,6 @@ toots.matapacos.dog
 toots.nu
 top-netz.de
 torguard.social
-torontodiy.xyz
 toulouse.social
 towns.gay
 trans.house
@@ -927,6 +927,7 @@ tux.social
 tweesecake.social
 twit.social
 typo.social
+typo3.social
 tzcafe.com
 ukrainian.network
 umaikebab.xyz
@@ -944,6 +945,7 @@ utter.online
 uwu.social
 v2br.social
 veganism.social
+verkehrswende.social
 vermont.masto.host
 videochina.net
 vis.social
@@ -981,8 +983,6 @@ woofy.social
 worldkey.io
 writing.exchange
 wspanialy.eu
-www.blimps.xyz
-www.mastodon.scot
 www.paradiseve.com
 wxw.moe
 xarxa.cloud

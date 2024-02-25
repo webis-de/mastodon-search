@@ -1,4 +1,8 @@
-"""Define a common Mastodon status in Elasticsearch DSL."""
+"""Define a common Mastodon status in Elasticsearch DSL.
+All fields are named after the original Mastodon entities,
+except when stated otherwise.
+See: https://docs.joinmastodon.org/entities/Status/
+"""
 
 from datetime import datetime
 from elasticsearch_dsl import (
@@ -179,7 +183,7 @@ class Status(Document):
     in_reply_to_id: str = Keyword()
     # Custom attribute: the instance this status was posted on
     instance: str = Keyword()
-    # Custom attribute: if this status originates from the instance itself
+    # Custom attribute: if this status originates from the crawled instance
     is_local: bool = Boolean()
     language: str = Keyword()
     poll: Poll = Object(Poll)
@@ -210,10 +214,7 @@ class Status(Document):
         self, blurhash, description, id, raw_meta,
         preview_url, remote_url, type, url
     ) -> None:
-        """meta should be the original dict that Mastodon.py gives: with an
-        'original' entry that itself is a dict containing 'aspect', 'height'
-        and 'width' as integers.
-        """
+        """raw_meta should be the original dict that Mastodon.py gives."""
         if (raw_meta):
             if (raw_focus := raw_meta.get('focus')):
                 focus = Focus(
