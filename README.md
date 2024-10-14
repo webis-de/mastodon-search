@@ -160,7 +160,7 @@ If you have found a bug in this crawler or feel some feature is missing, please 
 
 If you are unsure about anything, post an [issue](https://github.com/webis-de/mastodon-search/issues/new) or contact us:
 
-- [heinrich.reimer@uni-jena.de](mailto:heinrich.reimer@uni-jena.de)
+- [heinrich.merker@uni-jena.de](mailto:heinrich.merker@uni-jena.de)
 
 We are happy to help!
 

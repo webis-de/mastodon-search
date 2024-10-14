@@ -2,7 +2,7 @@
 name = "mastodon-search"
 authors = [
     { name = "Matti Wiegmann", email = "matti.wiegmann@uni-weimar.de" },
-    { name = "Jan Heinrich Reimer", email = "heinrich.reimer@uni-jena.de" },
+    { name = "Jan Heinrich Merker", email = "heinrich.merker@uni-jena.de" },
     { name = "Maximilian Ernst" },
     { name = "Matthias Hagen", email = "matthias.hagen@uni-jena.de" },
     { name = "Benno Stein", email = "benno.stein@uni-weimar.de" },
