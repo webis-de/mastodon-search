@@ -110,9 +110,9 @@ class Meta(InnerDoc):
     audio_bitrate: str = Keyword()
     audio_channels: str = Keyword()
     audio_encode: str = Keyword()
-    focus: Focus() = Object(Focus)
-    original: MetaInfo() = Object(MetaInfo)
-    small: MetaInfo() = Object(MetaInfo)
+    focus: Focus = Object(Focus)
+    original: MetaInfo = Object(MetaInfo)
+    small: MetaInfo = Object(MetaInfo)
 
 class MediaAttachment(InnerDoc):
     blurhash: str = Keyword()
