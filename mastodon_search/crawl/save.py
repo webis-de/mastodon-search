@@ -126,7 +126,7 @@ class _Save(deque[Status]):
             except AuthenticationException:
                 print('Elasticsearch authentication failed. '
                     +'Wrong username and/or password.')
-                exit(1)
+                raise
             except ConnectionError:
                 if (retries < 3):
                     retries += 1
