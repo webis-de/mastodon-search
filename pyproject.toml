@@ -23,7 +23,7 @@ classifiers = [
 ]
 dependencies = [
 	"click~=8.1",
-	"elasticsearch~=8.15",
+	"elasticsearch~=9.0",
 	"elasticsearch-dsl~=8.15",
     "favicon~=0.7.0",
 	"mastodon-py~=2.0",
